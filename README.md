@@ -1,3 +1,3 @@
 # WorldMarker
 
-Store custom persistent data in worlds, chunks, blocks.
+Store custom persistent data in blocks.
