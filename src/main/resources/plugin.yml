@@ -1,0 +1,19 @@
+main: com.cavetale.worldmarker.WorldMarkerPlugin
+name: WorldMarker
+version: 0.1
+api-version: 1.13
+description: Store custom persistent data in worlds, chunks, blocks.
+author: StarTux
+website: https://cavetale.com
+depend: []
+softdepend: []
+commands:
+  worldmarker:
+    aliases: []
+    description: WorldMarker Command
+    permission: worldmarker.worldmarker
+    usage: /<command>
+permissions:
+  worldmarker.worldmarker:
+    description: Use /worldmarker
+    default: op
