@@ -54,7 +54,11 @@ public final class BlockMarker {
         return getMarkBlock(block).getId();
     }
 
-    public static void setId(@NonNull Block block, String id) {
+    public static void setId(@NonNull Block block, @NonNull String id) {
         getMarkBlock(block).setId(id);
+    }
+
+    public static void resetId(@NonNull Block block, @NonNull String id) {
+        getMarkBlock(block).setId(null);
     }
 }

@@ -2,7 +2,7 @@ main: com.cavetale.worldmarker.WorldMarkerPlugin
 name: WorldMarker
 version: 0.1
 api-version: 1.13
-description: Store custom persistent data in blocks.
+description: Manage custom persistent ids in blocks, items, entities.
 author: StarTux
 website: https://cavetale.com
 depend: []

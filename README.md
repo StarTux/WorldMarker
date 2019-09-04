@@ -1,3 +1,3 @@
 # WorldMarker
 
-Store custom persistent data in blocks.
+Manage custom persistent ids in blocks, items, entities.
