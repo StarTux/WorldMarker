@@ -14,6 +14,7 @@ public final class WorldMarkerPlugin extends JavaPlugin {
         new BlockMarker();
         new ItemMarker(this);
         new EntityMarker(this);
+        getServer().getPluginManager().registerEvents(new EventListener(), this);
     }
 
     @Override
