@@ -1,5 +1,7 @@
 package com.cavetale.worldmarker;
 
+import java.util.Collection;
+import org.bukkit.Chunk;
 import org.bukkit.block.Block;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandSender;
@@ -11,14 +13,19 @@ import org.bukkit.plugin.java.JavaPlugin;
 public final class WorldMarkerPlugin extends JavaPlugin {
     @Override
     public void onEnable() {
-        new BlockMarker();
+        new BlockMarker(this);
         new ItemMarker(this);
         new EntityMarker(this);
         getServer().getPluginManager().registerEvents(new EventListener(), this);
+        getServer().getScheduler().runTaskTimer(this, this::onTick, 1, 1);
     }
 
     @Override
     public void onDisable() {
+    }
+
+    void onTick() {
+        BlockMarker.instance.onTick();
     }
 
     @Override
@@ -39,11 +46,31 @@ public final class WorldMarkerPlugin extends JavaPlugin {
             String at = "" + block.getX() + "," + block.getY() + "," + block.getZ();
             if (args.length == 1) {
                 String id = BlockMarker.getId(block);
-                player.sendMessage(at + ": " + id);
+                if (id == null) {
+                    player.sendMessage("No id stored at " + at + "!");
+                } else {
+                    player.sendMessage(at + ": " + id);
+                }
             } else if (args.length == 2) {
                 String id = args[1];
                 BlockMarker.setId(block, id);
                 player.sendMessage(at + " => " + id);
+            }
+            return true;
+        }
+        case "chunk": {
+            if (!(sender instanceof Player)) {
+                sender.sendMessage("Player expected!");
+                return true;
+            }
+            Player player = (Player) sender;
+            Chunk chunk = player.getLocation().getChunk();
+            Collection<MarkBlock> markBlocks = BlockMarker.getBlocks(chunk);
+            player.sendMessage("" + markBlocks.size() + " marked blocks in chunk "
+                               + chunk.getX() + "," + chunk.getZ() + ".");
+            for (MarkBlock markBlock : markBlocks) {
+                player.sendMessage(markBlock.x + "," + markBlock.y + "," + markBlock.z
+                                   + ": " + markBlock.getId());
             }
             return true;
         }
@@ -98,6 +125,7 @@ public final class WorldMarkerPlugin extends JavaPlugin {
         case "save": {
             BlockMarker.instance.saveAll();
             sender.sendMessage("All regions saved!");
+            return true;
         }
         default: return false;
         }
