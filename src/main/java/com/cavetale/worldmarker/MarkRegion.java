@@ -18,7 +18,7 @@ final class MarkRegion {
     final int rz;
     final long key;
     final File file;
-    final TreeMap<Integer, MarkBlock> blocks = new TreeMap<>();
+    TreeMap<Long, MarkChunk> chunks = new TreeMap<>();
     static Gson gson = new Gson();
     static final String SUFFIX = ".json";
     transient long lastUse;
@@ -75,22 +75,37 @@ final class MarkRegion {
     void load() {
         try (BufferedReader in = new BufferedReader(new FileReader(file))) {
             String line;
+            int linum = 0;
             while (null != (line = in.readLine())) {
+                linum += 1;
                 try {
-                    if (line.startsWith("block,")) {
+                    if (line.startsWith("chunk,")) {
+                        String[] toks = line.split(",", 4);
+                        int x = Integer.parseInt(toks[1]);
+                        int z = Integer.parseInt(toks[2]);
+                        long chunkKey = Util.toLong(x, z);
+                        MarkTag tag = gson.fromJson(toks[3], MarkTag.class);
+                        MarkChunk markChunk = new MarkChunk(this, x, z, chunkKey, tag);
+                        chunks.put(chunkKey, markChunk);
+                    } else if (line.startsWith("block,")) {
                         String[] toks = line.split(",", 5);
                         int x = Integer.parseInt(toks[1]);
                         int y = Integer.parseInt(toks[2]);
                         int z = Integer.parseInt(toks[3]);
                         int blockKey = Util.regional(x, y, z);
-                        MarkBlock.Tag tag = gson.fromJson(toks[4], MarkBlock.Tag.class);
-                        MarkBlock markBlock = new MarkBlock(this, x, y, z, blockKey, tag);
-                        blocks.put(blockKey, markBlock);
+                        MarkTag tag = gson.fromJson(toks[4], MarkTag.class);
+                        MarkChunk markChunk = getChunk(x >> 4, z >> 4);
+                        MarkBlock markBlock = new MarkBlock(markChunk, x, y, z, blockKey, tag);
+                        markChunk.blocks.put(blockKey, markBlock);
                     } else {
                         markWorld.plugin.getLogger()
-                            .info("MarkRegion: " + file + ": Invalid line: `" + line + "'");
+                            .warning("MarkRegion: " + file + ": Invalid line "
+                                     + linum + ": `" + line + "'");
                     }
                 } catch (Exception e) {
+                    markWorld.plugin.getLogger()
+                        .warning("MarkRegion: " + file + ": Line "
+                                 + linum + ": `" + line + "'");
                     e.printStackTrace();
                     continue;
                 }
@@ -101,26 +116,52 @@ final class MarkRegion {
     }
 
     void save() {
-        lastSave = System.nanoTime();
+        lastSave = Util.now();
         try (PrintStream out = new PrintStream(file)) {
-            for (MarkBlock markBlock : blocks.values()) {
-                if (markBlock.isEmpty()) continue;
-                out.println("block,"
-                            + markBlock.x + "," + markBlock.y + "," + markBlock.z
-                            + "," + gson.toJson(markBlock.tag));
+            for (MarkChunk markChunk : chunks.values()) {
+                if (markChunk.isEmpty()) continue;
+                out.println("chunk,"
+                            + markChunk.x + "," + markChunk.z
+                            + "," + gson.toJson(markChunk.tag));
+                for (MarkBlock markBlock : markChunk.blocks.values()) {
+                    if (markBlock.isEmpty()) continue;
+                    out.println("block,"
+                                + markBlock.x + "," + markBlock.y + "," + markBlock.z
+                                + "," + gson.toJson(markBlock.tag));
+                }
             }
         } catch (IOException ioe) {
             ioe.printStackTrace();
         }
     }
 
-    MarkBlock getBlock(final int x, final int y, final int z) {
-        int blockKey = Util.regional(x, y, z);
-        MarkBlock result = blocks.get(blockKey);
+    MarkChunk getChunk(final int x, final int z) {
+        long chunkKey = Util.toLong(x, z);
+        MarkChunk result = chunks.get(chunkKey);
         if (result == null) {
-            result = new MarkBlock(this, x, y, z, blockKey, null);
-            blocks.put(blockKey, result);
+            result = new MarkChunk(this, x, z, chunkKey, null);
+            chunks.put(chunkKey, result);
         }
         return result;
+    }
+
+    MarkBlock getBlock(final int x, final int y, final int z) {
+        return getChunk(x >> 4, z >> 4).getBlock(x, y, z);
+    }
+
+    public boolean isEmpty() {
+        for (MarkChunk markChunk : chunks.values()) {
+            if (!markChunk.isEmpty()) return false;
+        }
+        return true;
+    }
+
+    public String getIdString() {
+        return rx + "," + rz;
+    }
+
+    public boolean isValid() {
+        return markWorld.isValid()
+            && markWorld.regions.get(key) == this;
     }
 }

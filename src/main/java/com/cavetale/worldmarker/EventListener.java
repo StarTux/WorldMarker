@@ -1,6 +1,8 @@
 package com.cavetale.worldmarker;
 
 import org.bukkit.Bukkit;
+import org.bukkit.Chunk;
+import org.bukkit.World;
 import org.bukkit.block.Block;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.Player;
@@ -11,6 +13,9 @@ import org.bukkit.event.entity.EntityDamageByEntityEvent;
 import org.bukkit.event.inventory.ClickType;
 import org.bukkit.event.player.PlayerInteractEntityEvent;
 import org.bukkit.event.player.PlayerInteractEvent;
+import org.bukkit.event.world.ChunkLoadEvent;
+import org.bukkit.event.world.ChunkUnloadEvent;
+import org.bukkit.event.world.WorldUnloadEvent;
 import org.bukkit.inventory.EquipmentSlot;
 import org.bukkit.inventory.ItemStack;
 
@@ -90,5 +95,23 @@ final class EventListener implements Listener {
         MarkedItemUseEvent ev =
             new MarkedItemUseEvent(player, item, id, hand, click, entity, null, event);
         Bukkit.getServer().getPluginManager().callEvent(ev);
+    }
+
+    @EventHandler(ignoreCancelled = true, priority = EventPriority.MONITOR)
+    void onChunkLoad(ChunkLoadEvent event) {
+        Chunk chunk = event.getChunk();
+        BlockMarker.getWorld(chunk.getWorld()).markChunkLoaded(chunk);
+    }
+
+    @EventHandler(ignoreCancelled = true, priority = EventPriority.MONITOR)
+    void onChunkUnload(ChunkUnloadEvent event) {
+        Chunk chunk = event.getChunk();
+        BlockMarker.getWorld(chunk.getWorld()).markChunkUnloaded(chunk);
+    }
+
+    @EventHandler(ignoreCancelled = true, priority = EventPriority.MONITOR)
+    void onWorldUnload(WorldUnloadEvent event) {
+        World world = event.getWorld();
+        BlockMarker.instance.unloadWorld(world);
     }
 }

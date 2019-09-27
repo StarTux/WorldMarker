@@ -46,6 +46,8 @@ public final class MarkedItemUseEvent extends Event implements Cancellable {
         return block != null;
     }
 
+    // Event Protocol
+
     @Override
     public HandlerList getHandlers() {
         return HANDLERS;

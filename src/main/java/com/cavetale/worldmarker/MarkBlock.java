@@ -1,8 +1,7 @@
 package com.cavetale.worldmarker;
 
-import java.util.HashMap;
 import java.util.Map;
-import lombok.AllArgsConstructor;
+import lombok.NonNull;
 import org.bukkit.World;
 import org.bukkit.block.Block;
 
@@ -11,20 +10,25 @@ import org.bukkit.block.Block;
  * not regional ones.  To get the coordinate within a region, compute
  * `x & 511 and `z & 511`.
  */
-@AllArgsConstructor
 public final class MarkBlock {
-    final MarkRegion markRegion;
+    final MarkChunk markChunk;
     // World coordinates:
     public final int x;
     public final int y;
     public final int z;
     // Util.regional(x, y, z):
     public final int key;
-    Tag tag;
+    MarkTag tag;
 
-    static class Tag {
-        private String id;
-        private Map<String, Object> data;
+    MarkBlock(@NonNull final MarkChunk markChunk,
+              final int x, final int y, final int z, final int key,
+              final MarkTag tag) {
+        this.markChunk = markChunk;
+        this.x = x;
+        this.y = y;
+        this.z = z;
+        this.key = key;
+        this.tag = tag;
     }
 
     public boolean hasId() {
@@ -32,14 +36,14 @@ public final class MarkBlock {
     }
 
     public void setId(final String id) {
-        markRegion.update();
-        if (tag == null) tag = new Tag();
+        markChunk.markRegion.update();
+        if (tag == null) tag = new MarkTag();
         tag.id = id;
     }
 
     public void resetId() {
         if (tag == null) return;
-        markRegion.update();
+        markChunk.markRegion.update();
         tag.id = null;
     }
 
@@ -48,11 +52,15 @@ public final class MarkBlock {
         return tag.id;
     }
 
+    public boolean hasId(@NonNull String id) {
+        if (tag == null) return false;
+        return id.equals(tag.id);
+    }
+
     public Map<String, Object> getData() {
-        markRegion.update(); // Potential update
-        if (tag == null) tag = new Tag();
-        if (tag.data == null) tag.data = new HashMap<>();
-        return tag.data;
+        markChunk.markRegion.update(); // Potential update
+        if (tag == null) tag = new MarkTag();
+        return tag.getData();
     }
 
     public void reset() {
@@ -60,9 +68,7 @@ public final class MarkBlock {
     }
 
     public boolean isEmpty() {
-        if (tag == null) return true;
-        return tag.id == null
-            && (tag.data == null || tag.data.isEmpty());
+        return tag == null || tag.isEmpty();
     }
 
     public Block getBlock() {
@@ -70,6 +76,22 @@ public final class MarkBlock {
     }
 
     public World getWorld() {
-        return markRegion.markWorld.getWorld();
+        return markChunk.markRegion.markWorld.getWorld();
+    }
+
+    /**
+     * Return the distance to the nearest player in chunks (16 blocks).
+     */
+    public int getPlayerDistance() {
+        return markChunk.playerDistance;
+    }
+
+    public int getTicksLoaded() {
+        return markChunk.loadedTicks;
+    }
+
+    public boolean isValid() {
+        return markChunk.isValid()
+            && markChunk.blocks.get(key) == this;
     }
 }

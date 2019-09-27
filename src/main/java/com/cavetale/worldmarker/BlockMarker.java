@@ -2,7 +2,6 @@ package com.cavetale.worldmarker;
 
 import java.util.Collection;
 import java.util.HashMap;
-import java.util.Stack;
 import java.util.UUID;
 import lombok.NonNull;
 import org.bukkit.Bukkit;
@@ -14,29 +13,24 @@ public final class BlockMarker {
     static BlockMarker instance;
     final WorldMarkerPlugin plugin;
     final HashMap<UUID, MarkWorld> worlds = new HashMap<>();
-    final Stack<Runnable> tasks = new Stack<>();
 
     BlockMarker(@NonNull final WorldMarkerPlugin plugin) {
         this.plugin = plugin;
         instance = this;
     }
 
-    void onTick() {
-        if (tasks.isEmpty()) {
-            for (UUID uuid : worlds.keySet()) {
-                tasks.push(() -> tickWorld(uuid));
+    void loadAllWorlds() {
+        for (World world : plugin.getServer().getWorlds()) {
+            MarkWorld markWorld = getWorld(world);
+            for (Chunk chunk : world.getLoadedChunks()) {
+                markWorld.markChunkLoaded(chunk);
             }
-            return;
         }
-        tasks.pop().run();
     }
 
-    // Task
-    void tickWorld(UUID uuid) {
-        MarkWorld markWorld = worlds.get(uuid);
-        if (markWorld == null) return;
-        for (Long key : markWorld.regions.keySet()) {
-            tasks.push(() -> markWorld.tickRegion(key));
+    void onTick() {
+        for (World world : plugin.getServer().getWorlds()) {
+            getWorld(world).onTick();
         }
     }
 
@@ -57,11 +51,40 @@ public final class BlockMarker {
         return result;
     }
 
+    void unloadWorld(@NonNull World world) {
+        MarkWorld markWorld = instance.worlds.get(world.getUID());
+        if (markWorld == null) return;
+        markWorld.saveAll();
+        worlds.remove(world.getUID());
+    }
+
+    // World API
+
     public static MarkWorld getWorld(@NonNull String name) {
         World world = Bukkit.getWorld(name);
         if (world == null) return null;
         return getWorld(world);
     }
+
+    // Chunk API
+
+    public static MarkChunk getChunk(@NonNull Chunk chunk) {
+        return getWorld(chunk.getWorld()).getChunk(chunk.getX(), chunk.getZ());
+    }
+
+    public static String getId(@NonNull Chunk chunk) {
+        return getChunk(chunk).getId();
+    }
+
+    public static void setId(@NonNull Chunk chunk, @NonNull String id) {
+        getChunk(chunk).setId(id);
+    }
+
+    public static void resetId(@NonNull Chunk chunk) {
+        getChunk(chunk).resetId();
+    }
+
+    // Block API
 
     public static MarkBlock getBlock(@NonNull World world,
                                      final int x, final int y, final int z) {
@@ -104,6 +127,6 @@ public final class BlockMarker {
     }
 
     public static Collection<MarkBlock> getBlocks(@NonNull Chunk chunk) {
-        return getBlocksWithin(chunk.getBlock(0, 0, 0), chunk.getBlock(15, 255, 15));
+        return getWorld(chunk.getWorld()).getChunk(chunk.getX(), chunk.getZ()).getBlocks();
     }
 }
