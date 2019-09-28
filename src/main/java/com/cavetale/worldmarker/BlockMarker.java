@@ -106,8 +106,16 @@ public final class BlockMarker {
         getBlock(block).setId(id);
     }
 
-    public static void resetId(@NonNull Block block, @NonNull String id) {
+    public static void resetId(@NonNull Block block) {
         getBlock(block).resetId();
+    }
+
+    public static boolean hasId(@NonNull Block block, @NonNull String id) {
+        return getBlock(block).hasId(id);
+    }
+
+    public static boolean hasId(@NonNull Block block) {
+        return getBlock(block).hasId();
     }
 
     public static Collection<MarkBlock> getBlocksWithin(@NonNull Block a,
