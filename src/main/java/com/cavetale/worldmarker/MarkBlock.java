@@ -2,7 +2,6 @@ package com.cavetale.worldmarker;
 
 import java.util.Map;
 import lombok.NonNull;
-import org.bukkit.World;
 import org.bukkit.block.Block;
 
 /**
@@ -72,11 +71,15 @@ public final class MarkBlock {
     }
 
     public Block getBlock() {
-        return getWorld().getBlockAt(x, y, z);
+        return getWorld().getWorld().getBlockAt(x, y, z);
     }
 
-    public World getWorld() {
-        return markChunk.markRegion.markWorld.getWorld();
+    public MarkWorld getWorld() {
+        return markChunk.markRegion.markWorld;
+    }
+
+    public MarkChunk getChunk() {
+        return markChunk;
     }
 
     /**

@@ -103,6 +103,7 @@ public final class MarkWorld {
         markChunk.loaded = false;
         markChunk.playerDistance = Integer.MAX_VALUE;
         markChunk.loadedTicks = 0;
+        markChunk.transientData = null;
         markChunk.cleanUp();
     }
 
