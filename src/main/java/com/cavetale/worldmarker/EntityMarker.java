@@ -30,4 +30,10 @@ public final class EntityMarker {
         if (!tag.has(instance.key, PersistentDataType.STRING)) return null;
         return tag.get(instance.key, PersistentDataType.STRING);
     }
+
+    public static boolean hasId(@NonNull Entity entity, @NonNull String id) {
+        PersistentDataContainer tag = entity.getPersistentDataContainer();
+        if (!tag.has(instance.key, PersistentDataType.STRING)) return false;
+        return id.equals(tag.get(instance.key, PersistentDataType.STRING));
+    }
 }
