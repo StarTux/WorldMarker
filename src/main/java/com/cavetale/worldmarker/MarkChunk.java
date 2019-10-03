@@ -12,9 +12,9 @@ import org.bukkit.Chunk;
 
 public final class MarkChunk {
     final MarkRegion markRegion;
-    final int x;
-    final int z;
-    final long key;
+    public final int x;
+    public final int z;
+    public final long key;
     final TreeMap<Integer, MarkBlock> blocks = new TreeMap<>();
     MarkTag tag;
     Map<String, Object> transientData;
