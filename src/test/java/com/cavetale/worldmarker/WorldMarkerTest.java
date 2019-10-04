@@ -21,5 +21,18 @@ public final class WorldMarkerTest {
                 }
             }
         }
+
+        for (int i = 0; i < 1000; i += 1) {
+            int x = random.nextInt(10000) - 5000;
+            int z = random.nextInt(10000) - 5000;
+            long key = Util.toLong(x, z);
+            int x2 = Util.xFromLong(key);
+            int z2 = Util.zFromLong(key);
+            if (x != x2 || z != z2) {
+                System.err.println(x + "," + z + " => " + key + " => " + x2 + "," + z2);
+            }
+            Assert.assertEquals(x, x2);
+            Assert.assertEquals(z, z2);
+        }
     }
 }

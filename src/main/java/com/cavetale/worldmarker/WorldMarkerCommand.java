@@ -117,15 +117,25 @@ final class WorldMarkerCommand implements CommandExecutor {
             sender.sendMessage("Player expected!");
             return true;
         }
-        if (args.length != 0) return false;
         Player player = (Player) sender;
         Chunk chunk = player.getLocation().getChunk();
-        Collection<MarkBlock> markBlocks = BlockMarker.getBlocks(chunk);
-        player.sendMessage("" + markBlocks.size() + " marked blocks in chunk "
-                           + chunk.getX() + "," + chunk.getZ() + ".");
-        for (MarkBlock markBlock : markBlocks) {
-            player.sendMessage(markBlock.x + "," + markBlock.y + "," + markBlock.z
-                               + ": " + markBlock.getId());
+        MarkChunk markChunk = BlockMarker.getChunk(chunk);
+        player.sendMessage("Chunk " + markChunk.x + " " + markChunk.z + ":"
+                           + " valid=" + markChunk.isValid()
+                           + " loaded=" + markChunk.loaded
+                           + " pdist=" + markChunk.playerDistance
+                           + " ticks=" + markChunk.loadedTicks
+                           + " region=" + markChunk.markRegion.rx + "," + markChunk.markRegion.rz
+                           + " orig=" + chunk.getX() + "," + chunk.getZ()
+                           + " key=" + Util.xFromLong(markChunk.key) + "," + Util.zFromLong(markChunk.key));
+        if (args.length == 1 && args[0].equals("blocks")) {
+            Collection<MarkBlock> markBlocks = BlockMarker.getBlocks(chunk);
+            player.sendMessage("" + markBlocks.size() + " marked blocks in chunk "
+                               + chunk.getX() + "," + chunk.getZ() + ".");
+            for (MarkBlock markBlock : markBlocks) {
+                player.sendMessage(markBlock.x + "," + markBlock.y + "," + markBlock.z
+                                   + ": " + markBlock.getId());
+            }
         }
         return true;
     }
