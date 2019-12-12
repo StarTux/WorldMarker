@@ -37,4 +37,14 @@ public final class ItemMarker {
         if (!tag.has(instance.key, PersistentDataType.STRING)) return null;
         return tag.get(instance.key, PersistentDataType.STRING);
     }
+
+    public static boolean hasId(@NonNull ItemStack item) {
+        String itemId = getId(item);
+        return itemId != null;
+    }
+
+    public static boolean hasId(@NonNull ItemStack item, @NonNull String id) {
+        String itemId = getId(item);
+        return itemId != null && itemId.equals(id);
+    }
 }

@@ -127,7 +127,8 @@ final class WorldMarkerCommand implements CommandExecutor {
                            + " ticks=" + markChunk.loadedTicks
                            + " region=" + markChunk.markRegion.rx + "," + markChunk.markRegion.rz
                            + " orig=" + chunk.getX() + "," + chunk.getZ()
-                           + " key=" + Util.xFromLong(markChunk.key) + "," + Util.zFromLong(markChunk.key));
+                           + " key=" + Util.xFromLong(markChunk.key) + ","
+                           + Util.zFromLong(markChunk.key));
         if (args.length == 1 && args[0].equals("blocks")) {
             Collection<MarkBlock> markBlocks = BlockMarker.getBlocks(chunk);
             player.sendMessage("" + markBlocks.size() + " marked blocks in chunk "
