@@ -34,5 +34,6 @@ public final class WorldMarkerPlugin extends JavaPlugin {
     void onTick() {
         blockMarker.onTick();
         entityMarker.onTick();
+        itemMarker.onTick();
     }
 }
