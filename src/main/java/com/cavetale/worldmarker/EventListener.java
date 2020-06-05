@@ -1,14 +1,17 @@
 package com.cavetale.worldmarker;
 
 import org.bukkit.Bukkit;
-import org.bukkit.Chunk;
 import org.bukkit.World;
 import org.bukkit.block.Block;
+import org.bukkit.block.BlockState;
+import org.bukkit.block.TileState;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
+import org.bukkit.event.block.BlockDropItemEvent;
+import org.bukkit.event.block.BlockPlaceEvent;
 import org.bukkit.event.entity.EntityDamageByEntityEvent;
 import org.bukkit.event.inventory.ClickType;
 import org.bukkit.event.player.PlayerInteractEntityEvent;
@@ -18,6 +21,8 @@ import org.bukkit.event.world.ChunkUnloadEvent;
 import org.bukkit.event.world.WorldUnloadEvent;
 import org.bukkit.inventory.EquipmentSlot;
 import org.bukkit.inventory.ItemStack;
+import org.bukkit.persistence.PersistentDataContainer;
+import org.bukkit.persistence.PersistentDataType;
 
 /**
  * Conveniently listen for some actions which are otherwise
@@ -99,19 +104,76 @@ final class EventListener implements Listener {
 
     @EventHandler(ignoreCancelled = true, priority = EventPriority.MONITOR)
     void onChunkLoad(ChunkLoadEvent event) {
-        Chunk chunk = event.getChunk();
-        BlockMarker.getWorld(chunk.getWorld()).markChunkLoaded(chunk);
     }
 
     @EventHandler(ignoreCancelled = true, priority = EventPriority.MONITOR)
     void onChunkUnload(ChunkUnloadEvent event) {
-        Chunk chunk = event.getChunk();
-        BlockMarker.getWorld(chunk.getWorld()).markChunkUnloaded(chunk);
     }
 
     @EventHandler(ignoreCancelled = true, priority = EventPriority.MONITOR)
     void onWorldUnload(WorldUnloadEvent event) {
         World world = event.getWorld();
         BlockMarker.instance.unloadWorld(world);
+    }
+
+    /**
+     * For items which can be placed, if the corresponding block is a
+     * TileState, "freeze" the item id in the TileState.
+     * This block will not be treated like a marked block because the
+     * latter uses its own custom storage. The benefit of this is that
+     * marked items can be placed an picked up again. Namely, this
+     * goes for player heads.
+     */
+    @EventHandler(ignoreCancelled = true, priority = EventPriority.HIGHEST)
+    public void onBlockPlace(BlockPlaceEvent event) {
+        ItemStack item = event.getItemInHand();
+        String id = ItemMarker.getId(item);
+        if (id == null) return;
+        BlockState state = event.getBlock().getState();
+        if (!(state instanceof TileState)) return;
+        TileState tile = (TileState) state;
+        PersistentDataContainer tag = tile.getPersistentDataContainer();
+        tag.set(ItemMarker.instance.key, PersistentDataType.STRING, id);
+        tile.update();
+    }
+
+    /**
+     * Unfreeze a stored item id from a broken block. See
+     * `onBlockPlace()` for more details.
+     */
+    @EventHandler(ignoreCancelled = true, priority = EventPriority.HIGHEST)
+    public void onBlockDropItem(BlockDropItemEvent event) {
+        BlockState state = event.getBlockState();
+        if (!(state instanceof TileState)) return;
+        TileState tile = (TileState) state;
+        PersistentDataContainer tag = tile.getPersistentDataContainer();
+        if (!tag.has(ItemMarker.instance.key, PersistentDataType.STRING)) return;
+        String id = tag.get(ItemMarker.instance.key, PersistentDataType.STRING);
+        if (event.getItems().size() != 1) return;
+        ItemStack item = event.getItems().get(0).getItemStack();
+        if (ItemMarker.hasId(item)) return;
+        ItemMarker.setId(item, id);
+    }
+
+    public static final class Debug implements Persistent {
+        String test = "";
+
+        @Override
+        public void onTick() {
+            System.out.println("HERE!");
+        }
+    }
+
+    @EventHandler
+    public void onMarkChunkLoad(MarkChunkLoadEvent event) {
+        event.getChunk().streamBlocksWithId("debug")
+            .forEach(b -> {
+                    System.out.println("Load debug at " + b.getCoordString());
+                    Debug debug = b.getPersistent("debug", Debug.class, Debug::new);
+                });
+    }
+
+    @EventHandler
+    public void onMarkChunkTick(MarkChunkTickEvent event) {
     }
 }

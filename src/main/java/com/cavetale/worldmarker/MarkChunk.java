@@ -2,25 +2,23 @@ package com.cavetale.worldmarker;
 
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.HashMap;
 import java.util.Iterator;
-import java.util.Map;
 import java.util.TreeMap;
-import java.util.function.Supplier;
+import java.util.stream.Stream;
 import lombok.NonNull;
+import org.bukkit.Bukkit;
 import org.bukkit.Chunk;
 
-public final class MarkChunk {
+public final class MarkChunk extends MarkTagContainer {
     final MarkRegion markRegion;
     public final int x;
     public final int z;
     public final long key;
     final TreeMap<Integer, MarkBlock> blocks = new TreeMap<>();
-    MarkTag tag;
-    Map<String, Object> transientData;
     boolean loaded = false;
     int playerDistance = Integer.MAX_VALUE;
     int loadedTicks = 0;
+    long lastUse;
 
     MarkChunk(@NonNull final MarkRegion markRegion,
               final int x, final int z, final long key,
@@ -43,7 +41,7 @@ public final class MarkChunk {
     }
 
     public boolean isEmpty() {
-        if (tag != null && !tag.isEmpty()) return false;
+        if (!super.isEmpty()) return false;
         for (MarkBlock markBlock : blocks.values()) {
             if (!markBlock.isEmpty()) return false;
         }
@@ -54,25 +52,9 @@ public final class MarkChunk {
         return new ArrayList<>(blocks.values());
     }
 
-    public MarkTag getTag() {
-        if (tag == null) tag = new MarkTag();
-        return tag;
-    }
-
-    public String getId() {
-        if (tag == null) return null;
-        return tag.id;
-    }
-
-    public void setId(@NonNull String id) {
-        markRegion.update();
-        getTag().id = id;
-    }
-
-    public void resetId() {
-        markRegion.update();
-        if (tag == null) return;
-        tag.id = null;
+    public Stream<MarkBlock> streamBlocksWithId(@NonNull String id) {
+        return getBlocks().stream()
+            .filter(b -> b.hasId(id));
     }
 
     public int getTicksLoaded() {
@@ -84,31 +66,13 @@ public final class MarkChunk {
             && markRegion.chunks.get(key) == this;
     }
 
+    /**
+     * Call every now and then?
+     */
     void cleanUp() {
         for (Iterator<MarkBlock> iter = blocks.values().iterator(); iter.hasNext();) {
             if (iter.next().isEmpty()) iter.remove();
         }
-    }
-
-    public <E> E getTransientData(@NonNull String name, @NonNull Class<E> type, Supplier<E> dfl) {
-        if (transientData == null) {
-            transientData = new HashMap<>();
-        }
-        Object val = transientData.get(name);
-        if (val == null || !type.isInstance(val)) {
-            E result = dfl.get();
-            transientData.put(name, result);
-            return result;
-        }
-        return type.cast(val);
-    }
-
-    public void setTransientData(@NonNull String name, @NonNull Object val) {
-        transientData.put(name, val);
-    }
-
-    public void resetTransientData(@NonNull String name) {
-        transientData.remove(name);
     }
 
     public MarkWorld getWorld() {
@@ -117,5 +81,42 @@ public final class MarkChunk {
 
     public Chunk getChunk() {
         return getWorld().getWorld().getChunkAt(x, z);
+    }
+
+    /**
+     * Save at the next interval.
+     */
+    @Override
+    public void save() {
+        markRegion.save();
+    }
+
+    /**
+     * Mark this chunk as currently in use.  It will stay in use for
+     * at least 60 seconds.  This gets called on every tick as long as
+     * players keep chunks within it loaded.  It's also used when a
+     * chunk is requested.  All this happens in MarkWorld.
+     */
+    void use() {
+        lastUse = Util.nowInSeconds();
+    }
+
+    @Override
+    void onUnload() {
+        super.onUnload();
+        for (MarkBlock block : blocks.values()) block.onUnload();
+        MarkChunkUnloadEvent event = new MarkChunkUnloadEvent(this);
+        Bukkit.getServer().getPluginManager().callEvent(event);
+    }
+
+    public String getCoordString() {
+        return x + "," + z;
+    }
+
+    void onTick() {
+        for (MarkBlock block : blocks.values()) {
+            block.onTick();
+        }
+        super.onTick();
     }
 }

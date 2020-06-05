@@ -41,7 +41,7 @@ public final class Util {
         return key & 511;
     }
 
-    static long now() {
+    static long nowInSeconds() {
         return System.nanoTime() / 1000000000L;
     }
 }

@@ -31,6 +31,7 @@ final class WorldMarkerCommand implements CommandExecutor {
             sender.sendMessage("All regions saved!");
             return true;
         }
+        case "debug": return debugCommand(sender, argl);
         default: return false;
         }
     }
@@ -40,24 +41,27 @@ final class WorldMarkerCommand implements CommandExecutor {
             sender.sendMessage("Player expected!");
             return true;
         }
-        if (args.length > 1) return false;
+        if (args.length > 2) return false;
         Player player = (Player) sender;
-        Block block = player.getLocation().getBlock();
-        String at = "" + block.getX() + "," + block.getY() + "," + block.getZ();
+        Block block = player.getTargetBlock(6);
+        if (block == null) {
+            player.sendMessage("No target block!");
+            return true;
+        }
+        MarkBlock markBlock = BlockMarker.getBlock(block);
         if (args.length == 0) {
-            String id = BlockMarker.getId(block);
-            if (id == null) {
-                player.sendMessage("No id stored at " + at + "!");
-            } else {
-                player.sendMessage(at + ": " + id);
-            }
-            player.sendMessage(at
-                               + " valid=" + BlockMarker.getBlock(block).isValid()
-                               + " empty=" + BlockMarker.getBlock(block).isEmpty());
-        } else if (args.length == 1) {
+            player.sendMessage("Tag at " + markBlock.getCoordString() + ": " + markBlock.getTag());
+        } else if (args.length >= 1) {
             String id = args[0];
-            BlockMarker.setId(block, id);
-            player.sendMessage(at + " => " + id);
+            markBlock.setId(id);
+            if ("debug".equals(id) && args.length >= 2) {
+                EventListener.Debug debug = markBlock.getPersistent("debug",
+                                                                    EventListener.Debug.class,
+                                                                    EventListener.Debug::new);
+                debug.test = args[1];
+            }
+            markBlock.save();
+            player.sendMessage("Set tag at " + markBlock.getCoordString() + " to " + id);
         }
         return true;
     }
@@ -155,12 +159,16 @@ final class WorldMarkerCommand implements CommandExecutor {
                 sender.sendMessage(" "
                                    + markRegion.getIdString()
                                    + " " + c + markRegion.chunks.size() + r + " chunks"
-                                   + " dirty=" + c + markRegion.isDirty() + r
+                                   + " dirty=" + c + markRegion.dirty + r
                                    + " empty=" + c + markRegion.isEmpty() + r
                                    + " noUse=" + c + markRegion.getNoUse() + r
                                    + " noSave=" + c + markRegion.getNoSave());
             }
         }
         return true;
+    }
+
+    boolean debugCommand(CommandSender sender, String[] args) {
+        return false;
     }
 }

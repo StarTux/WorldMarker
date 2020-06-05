@@ -1,6 +1,5 @@
 package com.cavetale.worldmarker;
 
-import java.util.Map;
 import lombok.NonNull;
 import org.bukkit.block.Block;
 
@@ -8,8 +7,12 @@ import org.bukkit.block.Block;
  * The x, y, z coordinates represent **absolute** world coordinates,
  * not regional ones.  To get the coordinate within a region, compute
  * `x & 511 and `z & 511`.
+ *
+ * An instance of this should not be cached across server ticks
+ * because it might become invalidated.  Always use
+ * `MarkWorld::getBlock()` to receive a valid copy.
  */
-public final class MarkBlock {
+public final class MarkBlock extends MarkTagContainer {
     final MarkChunk markChunk;
     // World coordinates:
     public final int x;
@@ -17,7 +20,6 @@ public final class MarkBlock {
     public final int z;
     // Util.regional(x, y, z):
     public final int key;
-    MarkTag tag;
 
     MarkBlock(@NonNull final MarkChunk markChunk,
               final int x, final int y, final int z, final int key,
@@ -28,46 +30,6 @@ public final class MarkBlock {
         this.z = z;
         this.key = key;
         this.tag = tag;
-    }
-
-    public boolean hasId() {
-        return tag != null && tag.id != null;
-    }
-
-    public void setId(final String id) {
-        markChunk.markRegion.update();
-        if (tag == null) tag = new MarkTag();
-        tag.id = id;
-    }
-
-    public void resetId() {
-        if (tag == null) return;
-        markChunk.markRegion.update();
-        tag.id = null;
-    }
-
-    public String getId() {
-        if (tag == null) return null;
-        return tag.id;
-    }
-
-    public boolean hasId(@NonNull String id) {
-        if (tag == null) return false;
-        return id.equals(tag.id);
-    }
-
-    public Map<String, Object> getData() {
-        markChunk.markRegion.update(); // Potential update
-        if (tag == null) tag = new MarkTag();
-        return tag.getData();
-    }
-
-    public void reset() {
-        tag = null;
-    }
-
-    public boolean isEmpty() {
-        return tag == null || tag.isEmpty();
     }
 
     public Block getBlock() {
@@ -96,5 +58,19 @@ public final class MarkBlock {
     public boolean isValid() {
         return markChunk.isValid()
             && markChunk.blocks.get(key) == this;
+    }
+
+    @Override
+    public void save() {
+        markChunk.markRegion.save();
+    }
+
+    @Override
+    public String toString() {
+        return getWorld().getName() + ":" + x + "," + y + "," + z;
+    }
+
+    public String getCoordString() {
+        return "" + x + "," + y + "," + z;
     }
 }

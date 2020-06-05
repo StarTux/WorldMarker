@@ -22,9 +22,6 @@ public final class BlockMarker {
     void loadAllWorlds() {
         for (World world : plugin.getServer().getWorlds()) {
             MarkWorld markWorld = getWorld(world);
-            for (Chunk chunk : world.getLoadedChunks()) {
-                markWorld.markChunkLoaded(chunk);
-            }
         }
     }
 
@@ -36,9 +33,7 @@ public final class BlockMarker {
 
     void saveAll() {
         for (MarkWorld markWorld : worlds.values()) {
-            for (MarkRegion markRegion : markWorld.regions.values()) {
-                markRegion.save();
-            }
+            markWorld.saveAll();
         }
     }
 
@@ -54,6 +49,7 @@ public final class BlockMarker {
     void unloadWorld(@NonNull World world) {
         MarkWorld markWorld = instance.worlds.get(world.getUID());
         if (markWorld == null) return;
+        markWorld.onUnload();
         markWorld.saveAll();
         worlds.remove(world.getUID());
     }

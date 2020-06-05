@@ -5,76 +5,129 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Set;
 import java.util.TreeMap;
+import java.util.TreeSet;
 import java.util.UUID;
 import lombok.NonNull;
 import org.bukkit.Chunk;
+import org.bukkit.GameMode;
 import org.bukkit.Location;
 import org.bukkit.World;
 import org.bukkit.entity.Player;
 
-public final class MarkWorld {
+public final class MarkWorld extends MarkTagContainer {
     final WorldMarkerPlugin plugin;
-    final World world;
-    final UUID uid;
+    private final World world;
+    private final UUID uid;
     final File folder;
+    private final File file;
     final TreeMap<Long, MarkRegion> regions = new TreeMap<>();
     final TreeMap<Long, MarkChunk> loadedChunks = new TreeMap<>();
+    static final String FN = "world.json";
+    private transient boolean dirty;
+    private transient long lastSave;
 
     MarkWorld(@NonNull final WorldMarkerPlugin plugin, @NonNull final World world) {
         this.plugin = plugin;
         this.world = world;
         this.uid = world.getUID();
         folder = new File(world.getWorldFolder(), "cavetale.markers");
+        file = new File(folder, FN);
         folder.mkdirs();
+        loadFromDisk();
     }
 
     /**
      * Called by BlockMarker::onTick via WorldMarkerPlugin::onTick task.
+     *
+     * Saves regions and the world to disk if they're dirty and have
+     * not been saved for 60 seconds.
      */
     void onTick() {
-        // Update player distance for all loaded chunks
-        List<Integer> ps = new ArrayList<>();
+        // Update player distance
+        final int viewDistance = world.getViewDistance();
+        List<Integer> players = new ArrayList<>();
+        Set<Long> viewChunks = new TreeSet<>();
         for (Player player : world.getPlayers()) {
+            if (player.getGameMode() == GameMode.SPECTATOR) continue;
+            if (!player.isValid()) continue;
             Location loc = player.getLocation();
-            ps.add(loc.getBlockX() >> 4);
-            ps.add(loc.getBlockZ() >> 4);
+            final int cx = loc.getBlockX() >> 4;
+            final int cz = loc.getBlockZ() >> 4;
+            players.add(cx);
+            players.add(cz);
+            for (int dz = -viewDistance; dz <= viewDistance; dz += 1) {
+                for (int dx = -viewDistance; dx <= viewDistance; dx += 1) {
+                    long key = Util.toLong(cx + dx, cz + dz);
+                    viewChunks.add(key);
+                }
+            }
         }
+        // Make sure that all chunks within view distance are loaded
+        for (Long key : viewChunks) {
+            int x = Util.xFromLong(key);
+            int z = Util.zFromLong(key);
+            if (!world.isChunkLoaded(x, z)) continue;
+            // Will add the chunk to loadedChunks and call use()
+            MarkChunk markChunk = getChunk(x, z);
+        }
+        long now = Util.nowInSeconds();
+        // Tick all active chunks.
         for (MarkChunk markChunk : new ArrayList<>(loadedChunks.values())) {
             int min = Integer.MAX_VALUE;
-            for (int i = 0; i < ps.size(); i += 2) {
-                int x = ps.get(i);
-                int z = ps.get(i + 1);
+            for (int i = 0; i < players.size(); i += 2) {
+                int x = players.get(i);
+                int z = players.get(i + 1);
                 int d = Math.max(Math.abs(x - markChunk.x),
                                  Math.abs(z - markChunk.z));
                 if (d < min) min = d;
             }
             markChunk.playerDistance = min;
+            markChunk.loadedTicks += 1;
             markChunk.markRegion.use();
-            if (!markChunk.isEmpty()) {
+            boolean shouldTick = markChunk.playerDistance <= viewDistance
+                && !markChunk.isEmpty()
+                && world.isChunkLoaded(markChunk.x, markChunk.z);
+            if (shouldTick) {
+                markChunk.onTick();
                 MarkChunkTickEvent event = new MarkChunkTickEvent(markChunk);
                 plugin.getServer().getPluginManager().callEvent(event);
-                markChunk.loadedTicks += 1;
+            }
+            long noUse = now - markChunk.lastUse;
+            if (noUse > 60L) {
+                markChunk.onUnload();
+                loadedChunks.remove(markChunk.key);
             }
         }
+        // Save regions if necessary and unload unused ones
         for (Iterator<MarkRegion> iter = regions.values().iterator(); iter.hasNext();) {
             MarkRegion markRegion = iter.next();
-            if (markRegion.isDirty() && markRegion.getNoSave() >= 60L) {
-                markRegion.save();
+            if (markRegion.dirty && markRegion.getNoSave() > 300L) {
+                markRegion.writeToDisk();
             }
             // If a region has not been used at all for x seconds, unload it.
-            if (markRegion.getNoUse() > 10L) {
-                if (markRegion.isDirty()) {
-                    markRegion.save();
+            long noUse = now - markRegion.lastUse;
+            if (noUse > 60L) {
+                if (markRegion.dirty) {
+                    markRegion.writeToDisk();
                 }
                 iter.remove();
             }
         }
+        // Save world
+        if (dirty && getNoSave() >= 300L) {
+            writeToDisk();
+        }
+        super.onTick();
     }
 
     void saveAll() {
         for (MarkRegion markRegion : regions.values()) {
-            if (markRegion.isDirty()) markRegion.save();
+            if (markRegion.dirty) markRegion.writeToDisk();
+        }
+        if (dirty) {
+            writeToDisk();
         }
     }
 
@@ -89,22 +142,15 @@ public final class MarkWorld {
         return result;
     }
 
-    void markChunkLoaded(Chunk chunk) {
-        MarkChunk markChunk = getChunk(chunk);
-        loadedChunks.put(markChunk.key, markChunk);
-        markChunk.loaded = true;
-        markChunk.playerDistance = Integer.MAX_VALUE;
-        markChunk.loadedTicks = 0;
+    private void loadFromDisk() {
+        tag = plugin.json.load(file, MarkTag.class, MarkTag::new);
     }
 
-    void markChunkUnloaded(Chunk chunk) {
-        MarkChunk markChunk = getChunk(chunk);
-        loadedChunks.remove(markChunk.key);
-        markChunk.loaded = false;
-        markChunk.playerDistance = Integer.MAX_VALUE;
-        markChunk.loadedTicks = 0;
-        markChunk.transientData = null;
-        markChunk.cleanUp();
+    private void writeToDisk() {
+        dirty = false;
+        lastSave = Util.nowInSeconds();
+        prepareForSaving();
+        plugin.json.save(file, tag, false);
     }
 
     MarkChunk getChunk(@NonNull Chunk chunk) {
@@ -112,11 +158,26 @@ public final class MarkWorld {
     }
 
     MarkChunk getChunk(final int x, final int z) {
-        return getRegion(x >> 5, z >> 5).getChunk(x, z);
+        Long key = Util.toLong(x, z);
+        MarkChunk chunk = loadedChunks.get(key);
+        if (chunk != null) {
+            chunk.use();
+            return chunk;
+        }
+        chunk = getRegion(x >> 5, z >> 5).getChunk(x, z);
+        loadedChunks.put(key, chunk);
+        chunk.use();
+        MarkChunkLoadEvent event = new MarkChunkLoadEvent(chunk);
+        plugin.getServer().getPluginManager().callEvent(event);
+        return chunk;
+    }
+
+    long getNoSave() {
+        return Util.nowInSeconds() - lastSave;
     }
 
     public MarkBlock getBlock(final int x, final int y, final int z) {
-        return getRegion(x >> 9, z >> 9).getBlock(x, y, z);
+        return getChunk(x >> 4, z >> 4).getBlock(x, y, z);
     }
 
     public Collection<MarkBlock> getBlocksWithin(final int ax, final int ay, final int az,
@@ -161,5 +222,20 @@ public final class MarkWorld {
 
     public boolean isValid() {
         return BlockMarker.instance.worlds.get(uid) == this;
+    }
+
+    @Override
+    public void save() {
+        dirty = true;
+        lastSave = Util.nowInSeconds();
+    }
+
+    void onUnload() {
+        super.onUnload();
+        for (MarkChunk chunk : loadedChunks.values()) chunk.onUnload();
+    }
+
+    public String getName() {
+        return world.getName();
     }
 }
