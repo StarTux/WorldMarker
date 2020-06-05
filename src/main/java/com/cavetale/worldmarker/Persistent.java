@@ -4,15 +4,15 @@ public interface Persistent {
     /**
      * Override if desired.
      */
-    default void onSave() { }
+    default void onSave(MarkTagContainer container) { }
 
     /**
      * Override if desired.
      */
-    default void onUnload() { }
+    default void onUnload(MarkTagContainer container) { }
 
     /**
      * Override if desired.
      */
-    default void onTick() { }
+    default void onTick(MarkTagContainer container) { }
 }

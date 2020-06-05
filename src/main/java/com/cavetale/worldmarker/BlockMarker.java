@@ -37,6 +37,10 @@ public final class BlockMarker {
         }
     }
 
+    void clear() {
+        worlds.clear();
+    }
+
     public static MarkWorld getWorld(@NonNull World world) {
         MarkWorld result = instance.worlds.get(world.getUID());
         if (result == null) {

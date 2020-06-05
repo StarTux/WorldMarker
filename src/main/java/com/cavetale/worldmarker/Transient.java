@@ -4,10 +4,10 @@ public interface Transient {
     /**
      * Override if desired.
      */
-    default void onUnload() { }
+    default void onUnload(MarkTagContainer container) { }
 
     /**
      * Override if desired.
      */
-    default void onTick() { }
+    default void onTick(MarkTagContainer container) { }
 }

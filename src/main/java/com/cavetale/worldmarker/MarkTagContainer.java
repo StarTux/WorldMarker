@@ -29,16 +29,14 @@ abstract class MarkTagContainer {
         return tag != null && tag.id != null;
     }
 
-    public final void setId(final String id) {
-        if (tag == null) tag = new MarkTag();
-        tag.id = id;
-        save();
+    public final void setId(@NonNull final String id) {
+        getTag().id = id;
     }
 
     public final void resetId() {
         if (tag == null) return;
         tag.id = null;
-        save();
+        removePersistent(tag.id); // Convention
     }
 
     public final String getId() {
@@ -136,7 +134,7 @@ abstract class MarkTagContainer {
             Persistent value = entry.getValue();
             String json;
             try {
-                value.onSave();
+                value.onSave(this);
                 json = Json.serialize(value);
             } catch (Exception e) {
                 String msg = getClass().getSimpleName() + "::prepareForSaving: " + key;
@@ -154,7 +152,7 @@ abstract class MarkTagContainer {
     void onUnload() {
         for (Map.Entry<String, Persistent> entry : persistentCache.entrySet()) {
             try {
-                entry.getValue().onUnload();
+                entry.getValue().onUnload(this);
             } catch (Exception e) {
                 String msg = getClass().getSimpleName() + "::onUnload: " + entry.getKey();
                 WorldMarkerPlugin.instance.getLogger().log(Level.SEVERE, msg, e);
@@ -162,7 +160,7 @@ abstract class MarkTagContainer {
         }
         for (Map.Entry<String, Transient> entry : transientCache.entrySet()) {
             try {
-                entry.getValue().onUnload();
+                entry.getValue().onUnload(this);
             } catch (Exception e) {
                 String msg = getClass().getSimpleName() + "::onUnload: " + entry.getKey();
                 WorldMarkerPlugin.instance.getLogger().log(Level.SEVERE, msg, e);
@@ -176,7 +174,7 @@ abstract class MarkTagContainer {
     void onTick() {
         for (Map.Entry<String, Persistent> entry : persistentCache.entrySet()) {
             try {
-                entry.getValue().onTick();
+                entry.getValue().onTick(this);
             } catch (Exception e) {
                 String msg = getClass().getSimpleName() + "::onTick: " + entry.getKey();
                 WorldMarkerPlugin.instance.getLogger().log(Level.SEVERE, msg, e);
@@ -184,7 +182,7 @@ abstract class MarkTagContainer {
         }
         for (Map.Entry<String, Transient> entry : transientCache.entrySet()) {
             try {
-                entry.getValue().onTick();
+                entry.getValue().onTick(this);
             } catch (Exception e) {
                 String msg = getClass().getSimpleName() + "::onTick: " + entry.getKey();
                 WorldMarkerPlugin.instance.getLogger().log(Level.SEVERE, msg, e);

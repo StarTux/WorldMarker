@@ -2,6 +2,7 @@ package com.cavetale.worldmarker;
 
 import java.util.Arrays;
 import java.util.Collection;
+import lombok.RequiredArgsConstructor;
 import org.bukkit.ChatColor;
 import org.bukkit.Chunk;
 import org.bukkit.block.Block;
@@ -12,7 +13,10 @@ import org.bukkit.entity.Entity;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
 
+@RequiredArgsConstructor
 final class WorldMarkerCommand implements CommandExecutor {
+    final WorldMarkerPlugin plugin;
+
     @Override
     public boolean onCommand(final CommandSender sender,
                              final Command command,
@@ -54,11 +58,9 @@ final class WorldMarkerCommand implements CommandExecutor {
         } else if (args.length >= 1) {
             String id = args[0];
             markBlock.setId(id);
-            if ("debug".equals(id) && args.length >= 2) {
-                EventListener.Debug debug = markBlock.getPersistent("debug",
-                                                                    EventListener.Debug.class,
-                                                                    EventListener.Debug::new);
-                debug.test = args[1];
+            if ("debug".equals(id)) {
+                markBlock.getPersistent("debug", EventListener.Debug.class, EventListener.Debug::new)
+                    .test = args.length >= 2 ? args[1] : "-";
             }
             markBlock.save();
             player.sendMessage("Set tag at " + markBlock.getCoordString() + " to " + id);
@@ -95,23 +97,26 @@ final class WorldMarkerCommand implements CommandExecutor {
             sender.sendMessage("Player expected!");
             return true;
         }
-        if (args.length > 1) return false;
+        if (args.length > 2) return false;
         Player player = (Player) sender;
-        Entity entity = player.getNearbyEntities(1.0, 1.0, 1.0).stream()
-            .filter(e -> e != player)
-            .findFirst().orElse(null);
+        Entity entity = player.getTargetEntity(6);
         if (entity == null) {
-            player.sendMessage("No entity!");
+            player.sendMessage("No target entity");
             return true;
         }
         String it = entity.getType().name().toLowerCase();
+        MarkEntity markEntity = EntityMarker.getEntity(entity);
         if (args.length == 0) {
-            String id = EntityMarker.getId(entity);
-            player.sendMessage(it + ": " + id);
-        } else if (args.length == 1) {
+            player.sendMessage("Tag of " + it + ": " + markEntity.getTag());
+        } else if (args.length >= 1) {
             String id = args[0];
-            EntityMarker.setId(entity, id);
-            player.sendMessage(it + " => " + id);
+            markEntity.setId(id);
+            if ("debug".equals(id) && args.length >= 1) {
+                markEntity.getPersistent("debug", EventListener.Debug.class, EventListener.Debug::new)
+                    .test = args.length >= 2 ? args[1] : "-";
+            }
+            markEntity.save();
+            player.sendMessage("Set tag of " + it + ": " + markEntity.getTag());
         }
         return true;
     }

@@ -119,4 +119,9 @@ public final class MarkChunk extends MarkTagContainer {
         }
         super.onTick();
     }
+
+    @Override
+    public String toString() {
+        return "MarkChunk(" + getWorld().getName() + ":" + x + "," + z + ")";
+    }
 }

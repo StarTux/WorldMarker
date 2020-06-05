@@ -67,7 +67,7 @@ public final class MarkBlock extends MarkTagContainer {
 
     @Override
     public String toString() {
-        return getWorld().getName() + ":" + x + "," + y + "," + z;
+        return "MarkBlock(" + getWorld().getName() + ":" + x + "," + y + "," + z + ")";
     }
 
     public String getCoordString() {

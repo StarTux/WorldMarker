@@ -238,4 +238,9 @@ public final class MarkWorld extends MarkTagContainer {
     public String getName() {
         return world.getName();
     }
+
+    @Override
+    public String toString() {
+        return "MarkWorld(" + getName() + ")";
+    }
 }

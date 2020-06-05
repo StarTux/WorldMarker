@@ -1,39 +1,85 @@
 package com.cavetale.worldmarker;
 
+import java.util.ArrayList;
+import java.util.Map;
+import java.util.TreeMap;
 import lombok.NonNull;
-import org.bukkit.NamespacedKey;
+import org.bukkit.Bukkit;
+import org.bukkit.World;
 import org.bukkit.entity.Entity;
-import org.bukkit.persistence.PersistentDataContainer;
-import org.bukkit.persistence.PersistentDataType;
 
 public final class EntityMarker {
     static EntityMarker instance;
-    final NamespacedKey key;
+    final WorldMarkerPlugin plugin;
+    final Map<Integer, MarkEntity> cache = new TreeMap<>();
 
     EntityMarker(@NonNull final WorldMarkerPlugin plugin) {
         instance = this;
-        key = new NamespacedKey(plugin, "id");
+        this.plugin = plugin;
+    }
+
+    void saveAll() {
+        for (MarkEntity entity : cache.values()) {
+            if (entity.dirty) entity.serializeToEntityTag();
+        }
+    }
+
+    void clear() {
+        cache.clear();
+    }
+
+    void exit(Entity entity) {
+        MarkEntity cached = cache.get(entity.getEntityId());
+        if (cached == null) return;
+        cached.onUnload();
+        if (cached.dirty) cached.serializeToEntityTag();
+        cache.remove(entity.getEntityId());
+    }
+
+    public static MarkEntity getEntity(Entity entity) {
+        MarkEntity markEntity = instance.cache.get(entity.getEntityId());
+        if (markEntity != null) return markEntity;
+        markEntity = new MarkEntity(instance.plugin, entity);
+        instance.cache.put(entity.getEntityId(), markEntity);
+        MarkEntityLoadEvent event = new MarkEntityLoadEvent(markEntity);
+        Bukkit.getPluginManager().callEvent(event);
+        return markEntity;
     }
 
     public static void setId(@NonNull Entity entity, @NonNull String id) {
-        PersistentDataContainer tag = entity.getPersistentDataContainer();
-        tag.set(instance.key, PersistentDataType.STRING, id);
+        getEntity(entity).setId(id);
     }
 
     public static void resetId(@NonNull Entity entity) {
-        PersistentDataContainer tag = entity.getPersistentDataContainer();
-        tag.remove(instance.key);
+        getEntity(entity).resetId();
     }
 
     public static String getId(@NonNull Entity entity) {
-        PersistentDataContainer tag = entity.getPersistentDataContainer();
-        if (!tag.has(instance.key, PersistentDataType.STRING)) return null;
-        return tag.get(instance.key, PersistentDataType.STRING);
+        return getEntity(entity).getId();
     }
 
     public static boolean hasId(@NonNull Entity entity, @NonNull String id) {
-        PersistentDataContainer tag = entity.getPersistentDataContainer();
-        if (!tag.has(instance.key, PersistentDataType.STRING)) return false;
-        return id.equals(tag.get(instance.key, PersistentDataType.STRING));
+        return getEntity(entity).hasId(id);
+    }
+
+    void scanAllWorlds() {
+        for (World world : plugin.getServer().getWorlds()) {
+            for (Entity entity : world.getEntities()) {
+                getEntity(entity);
+            }
+        }
+    }
+
+    void onTick() {
+        long now = Util.nowInSeconds();
+        for (MarkEntity entity : new ArrayList<>(cache.values())) {
+            entity.onTick();
+            if (entity.dirty) {
+                long noSave = now - entity.lastSave;
+                if (noSave > 60L) {
+                    entity.serializeToEntityTag();
+                }
+            }
+        }
     }
 }
