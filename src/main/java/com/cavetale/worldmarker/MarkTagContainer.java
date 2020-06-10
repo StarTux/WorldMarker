@@ -7,7 +7,7 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 import lombok.NonNull;
 
-abstract class MarkTagContainer {
+public abstract class MarkTagContainer {
     protected MarkTag tag; // This will be serialized to disk in some fashion
     private final Map<String, Persistent> persistentCache = new HashMap<>();
     private final Map<String, Transient> transientCache = new HashMap<>();
