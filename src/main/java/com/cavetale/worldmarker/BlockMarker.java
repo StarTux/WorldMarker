@@ -3,6 +3,7 @@ package com.cavetale.worldmarker;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.UUID;
+import java.util.stream.Stream;
 import lombok.NonNull;
 import org.bukkit.Bukkit;
 import org.bukkit.Chunk;
@@ -136,5 +137,10 @@ public final class BlockMarker {
 
     public static Collection<MarkBlock> getBlocks(@NonNull Chunk chunk) {
         return getWorld(chunk.getWorld()).getChunk(chunk.getX(), chunk.getZ()).getBlocks();
+    }
+
+    public static Stream<MarkChunk> streamAllLoadedChunks() {
+        return instance.worlds.values().stream()
+            .flatMap(w -> w.loadedChunks.values().stream());
     }
 }

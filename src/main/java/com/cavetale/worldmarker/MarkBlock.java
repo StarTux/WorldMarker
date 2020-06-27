@@ -73,4 +73,8 @@ public final class MarkBlock extends MarkTagContainer {
     public String getCoordString() {
         return "" + x + "," + y + "," + z;
     }
+
+    public boolean isBukkitChunkLoaded() {
+        return getChunk().isBukkitChunkLoaded();
+    }
 }

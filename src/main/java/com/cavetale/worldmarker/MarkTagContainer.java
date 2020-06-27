@@ -7,20 +7,28 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 import lombok.NonNull;
 
+/**
+ * Superclass of MarkBlock, MarkChunk and MarkWorld.
+ * Maybe more in the future.
+ */
 public abstract class MarkTagContainer {
     protected MarkTag tag; // This will be serialized to disk in some fashion
     private final Map<String, Persistent> persistentCache = new HashMap<>();
     private final Map<String, Transient> transientCache = new HashMap<>();
 
-    MarkTag getTag() {
+    final MarkTag getTag() {
         if (tag == null) tag = new MarkTag();
         return tag;
     }
 
-    public boolean hasTag() {
+    public final boolean hasTag() {
         return tag != null && !tag.isEmpty();
     }
 
+    /**
+     * Return true if and only if this object is empty and therefore
+     * can safely be removed and skipped when writing to disk.
+     */
     public boolean isEmpty() {
         return !hasTag() && persistentCache.isEmpty();
     }
@@ -100,7 +108,7 @@ public abstract class MarkTagContainer {
         return fresh;
     }
 
-    public boolean removePersistent(String key) {
+    public final boolean removePersistent(String key) {
         if (null == persistentCache.remove(key)) {
             return false;
         }
@@ -116,7 +124,7 @@ public abstract class MarkTagContainer {
         return fresh;
     }
 
-    public boolean removeTransient(String key) {
+    public final boolean removeTransient(String key) {
         return transientCache.remove(key) != null;
     }
 
@@ -128,7 +136,7 @@ public abstract class MarkTagContainer {
     /**
      * Every MarkBlock, Chunk and World will do this before saving to disk.
      */
-    void prepareForSaving() {
+    public void prepareForSaving() {
         for (Map.Entry<String, Persistent> entry : persistentCache.entrySet()) {
             String key = entry.getKey();
             Persistent value = entry.getValue();
@@ -171,6 +179,9 @@ public abstract class MarkTagContainer {
         transientCache.clear();
     }
 
+    /**
+     * Implementers should call super::onTick().
+     */
     void onTick() {
         for (Map.Entry<String, Persistent> entry : persistentCache.entrySet()) {
             try {

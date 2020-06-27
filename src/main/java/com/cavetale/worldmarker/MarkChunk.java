@@ -124,4 +124,8 @@ public final class MarkChunk extends MarkTagContainer {
     public String toString() {
         return "MarkChunk(" + getWorld().getName() + ":" + x + "," + z + ")";
     }
+
+    public boolean isBukkitChunkLoaded() {
+        return getWorld().getWorld().isChunkLoaded(x, z);
+    }
 }
