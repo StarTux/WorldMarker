@@ -1,13 +1,8 @@
 package com.cavetale.worldmarker;
 
-public interface Transient {
+public interface Transient extends Tickable {
     /**
      * Override if desired.
      */
     default void onUnload(MarkTagContainer container) { }
-
-    /**
-     * Override if desired.
-     */
-    default void onTick(MarkTagContainer container) { }
 }

@@ -3,6 +3,7 @@ package com.cavetale.worldmarker;
 import java.util.ArrayList;
 import java.util.Map;
 import java.util.TreeMap;
+import java.util.stream.Stream;
 import lombok.NonNull;
 import org.bukkit.Bukkit;
 import org.bukkit.World;
@@ -81,5 +82,9 @@ public final class EntityMarker {
                 }
             }
         }
+    }
+
+    public Stream<MarkEntity> streamAllLoadedEntities() {
+        return new ArrayList<>(cache.values()).stream();
     }
 }

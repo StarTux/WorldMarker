@@ -243,4 +243,9 @@ public final class MarkWorld extends MarkTagContainer {
     public String toString() {
         return "MarkWorld(" + getName() + ")";
     }
+
+    @Override
+    protected void tickTickable(Tickable tickable) {
+        tickable.onTickMarkWorld(this);
+    }
 }

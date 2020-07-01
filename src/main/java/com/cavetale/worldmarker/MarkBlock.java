@@ -77,4 +77,9 @@ public final class MarkBlock extends MarkTagContainer {
     public boolean isBukkitChunkLoaded() {
         return getChunk().isBukkitChunkLoaded();
     }
+
+    @Override
+    protected void tickTickable(Tickable tickable) {
+        tickable.onTickMarkBlock(this);
+    }
 }

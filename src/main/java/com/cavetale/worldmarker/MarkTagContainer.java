@@ -38,7 +38,12 @@ public abstract class MarkTagContainer {
     }
 
     public final void setId(@NonNull final String id) {
-        getTag().id = id;
+        getTag();
+        if (tag.id != null) {
+            removePersistent(tag.id); // Convention
+            tag.id = null;
+        }
+        tag.id = id;
     }
 
     public final void resetId() {
@@ -109,10 +114,12 @@ public abstract class MarkTagContainer {
     }
 
     public final boolean removePersistent(String key) {
-        if (null == persistentCache.remove(key)) {
+        Persistent persistent = persistentCache.remove(key);
+        if (persistent == null) {
             return false;
         }
         removeRawData(key);
+        persistent.onUnload(this);
         return true;
     }
 
@@ -179,13 +186,15 @@ public abstract class MarkTagContainer {
         transientCache.clear();
     }
 
+    abstract protected void tickTickable(Tickable t);
+
     /**
      * Implementers should call super::onTick().
      */
     void onTick() {
         for (Map.Entry<String, Persistent> entry : persistentCache.entrySet()) {
             try {
-                entry.getValue().onTick(this);
+                tickTickable(entry.getValue());
             } catch (Exception e) {
                 String msg = getClass().getSimpleName() + "::onTick: " + entry.getKey();
                 WorldMarkerPlugin.instance.getLogger().log(Level.SEVERE, msg, e);
@@ -193,7 +202,7 @@ public abstract class MarkTagContainer {
         }
         for (Map.Entry<String, Transient> entry : transientCache.entrySet()) {
             try {
-                entry.getValue().onTick(this);
+                tickTickable(entry.getValue());
             } catch (Exception e) {
                 String msg = getClass().getSimpleName() + "::onTick: " + entry.getKey();
                 WorldMarkerPlugin.instance.getLogger().log(Level.SEVERE, msg, e);

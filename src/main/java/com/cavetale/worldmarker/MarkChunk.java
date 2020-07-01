@@ -128,4 +128,9 @@ public final class MarkChunk extends MarkTagContainer {
     public boolean isBukkitChunkLoaded() {
         return getWorld().getWorld().isChunkLoaded(x, z);
     }
+
+    @Override
+    protected void tickTickable(Tickable tickable) {
+        tickable.onTickMarkChunk(this);
+    }
 }

@@ -1,6 +1,6 @@
 package com.cavetale.worldmarker;
 
-public interface Persistent {
+public interface Persistent extends Tickable {
     /**
      * Override if desired.
      */
@@ -10,9 +10,4 @@ public interface Persistent {
      * Override if desired.
      */
     default void onUnload(MarkTagContainer container) { }
-
-    /**
-     * Override if desired.
-     */
-    default void onTick(MarkTagContainer container) { }
 }

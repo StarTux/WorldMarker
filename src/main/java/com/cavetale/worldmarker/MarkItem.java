@@ -30,4 +30,12 @@ public final class MarkItem extends MarkTagContainer {
         MarkTag.save(tag, meta);
         item.setItemMeta(meta);
     }
+
+    /**
+     * Item's Persistents cannot be ticked because they only ever
+     * exist temporarily.
+     */
+    @Override
+    protected void tickTickable(Tickable tickable) {
+    }
 }

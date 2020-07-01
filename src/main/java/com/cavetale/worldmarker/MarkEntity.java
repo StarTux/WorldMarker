@@ -47,4 +47,9 @@ public final class MarkEntity extends MarkTagContainer {
             + "," + loc.getBlockZ()
             + ")";
     }
+
+    @Override
+    protected void tickTickable(Tickable tickable) {
+        tickable.onTickMarkEntity(this);
+    }
 }

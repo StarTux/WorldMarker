@@ -8,7 +8,8 @@ import org.bukkit.persistence.PersistentDataHolder;
 import org.bukkit.persistence.PersistentDataType;
 
 /**
- * Custom data storage used for blocks, chunks, worlds.
+ * Custom data storage used for blocks, chunks, worlds, items,
+ * entities.
  *
  * This class should not be exposed to the client plugin.  Its
  * properties and method should be encapsulated by public methods of
@@ -68,6 +69,12 @@ final class MarkTag {
         return markTag;
     }
 
+    /**
+     * Save a MarkTag to NBT. If the MarkTag's id or data field is
+     * null, they will be deleted in the target NBT tag. The point is
+     * that they deserialize (this::load) to an identical MarkTag
+     * object.
+     */
     static void save(MarkTag markTag, PersistentDataHolder holder) {
         PersistentDataContainer container = holder.getPersistentDataContainer();
         if (container == null) return;
