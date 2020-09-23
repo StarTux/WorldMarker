@@ -15,6 +15,7 @@ import org.bukkit.GameMode;
 import org.bukkit.Location;
 import org.bukkit.World;
 import org.bukkit.entity.Player;
+import org.bukkit.plugin.java.JavaPlugin;
 
 public final class MarkWorld extends MarkTagContainer {
     final WorldMarkerPlugin plugin;
@@ -247,5 +248,12 @@ public final class MarkWorld extends MarkTagContainer {
     @Override
     protected void tickTickable(Tickable tickable) {
         tickable.onTickMarkWorld(this);
+    }
+
+    public void onPluginDisable(JavaPlugin javaPlugin) {
+        removePlugin(javaPlugin);
+        for (MarkChunk markChunk : loadedChunks.values()) {
+            markChunk.onPluginDisable(javaPlugin);
+        }
     }
 }

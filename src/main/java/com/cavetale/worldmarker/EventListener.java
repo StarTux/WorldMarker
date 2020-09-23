@@ -2,6 +2,8 @@ package com.cavetale.worldmarker;
 
 import com.destroystokyo.paper.event.entity.EntityAddToWorldEvent;
 import com.destroystokyo.paper.event.entity.EntityRemoveFromWorldEvent;
+import lombok.RequiredArgsConstructor;
+import org.bukkit.Bukkit;
 import org.bukkit.World;
 import org.bukkit.block.BlockState;
 import org.bukkit.block.TileState;
@@ -10,16 +12,25 @@ import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
 import org.bukkit.event.block.BlockDropItemEvent;
 import org.bukkit.event.block.BlockPlaceEvent;
+import org.bukkit.event.server.PluginDisableEvent;
 import org.bukkit.event.world.WorldUnloadEvent;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.persistence.PersistentDataContainer;
 import org.bukkit.persistence.PersistentDataType;
+import org.bukkit.plugin.java.JavaPlugin;
 
 /**
  * Conveniently listen for some actions which are otherwise
  * inconvenient to listen for.
  */
+@RequiredArgsConstructor
 final class EventListener implements Listener {
+    private final WorldMarkerPlugin plugin;
+
+    public void enable() {
+        Bukkit.getPluginManager().registerEvents(this, plugin);
+    }
+
     @EventHandler(ignoreCancelled = true, priority = EventPriority.MONITOR)
     void onWorldUnload(WorldUnloadEvent event) {
         World world = event.getWorld();
@@ -84,6 +95,11 @@ final class EventListener implements Listener {
         }
 
         @Override
+        public WorldMarkerPlugin getPlugin() {
+            return WorldMarkerPlugin.instance;
+        }
+
+        @Override
         public void onUnload(MarkTagContainer container) {
             WorldMarkerPlugin.instance.getLogger().info("worldmarker::Debug::onUnload " + container + " " + test);
         }
@@ -95,11 +111,6 @@ final class EventListener implements Listener {
 
         @Override
         public void onTick(MarkTagContainer container) {
-            if (!container.hasId("debug")) {
-                container.removePersistent("debug");
-                container.save();
-                return;
-            }
             if (ticks % 20 == 0) {
                 WorldMarkerPlugin.instance.getLogger().info("worldmarker::Debug::onTick " + container + " " + test);
             }
@@ -111,14 +122,21 @@ final class EventListener implements Listener {
     public void onMarkChunkLoad(MarkChunkLoadEvent event) {
         event.getChunk().streamBlocksWithId("debug")
             .forEach(b -> {
-                    b.getPersistent("debug", Debug.class, Debug::new);
+                    b.getPersistent(plugin, "debug", Debug.class, Debug::new);
                 });
     }
 
     @EventHandler
     public void onMarkEntityLoad(MarkEntityLoadEvent event) {
         if (event.getEntity().hasId("debug")) {
-            event.getEntity().getPersistent("debug", Debug.class, Debug::new);
+            event.getEntity().getPersistent(plugin, "debug", Debug.class, Debug::new);
         }
+    }
+
+    @EventHandler
+    public void onPluginDisable(PluginDisableEvent event) {
+        if (!(event.getPlugin() instanceof JavaPlugin)) return;
+        JavaPlugin javaPlugin = (JavaPlugin) event.getPlugin();
+        plugin.onPluginDisable(javaPlugin);
     }
 }

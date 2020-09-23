@@ -8,6 +8,7 @@ import java.util.stream.Stream;
 import lombok.NonNull;
 import org.bukkit.Bukkit;
 import org.bukkit.Chunk;
+import org.bukkit.plugin.java.JavaPlugin;
 
 public final class MarkChunk extends MarkTagContainer {
     final MarkRegion markRegion;
@@ -132,5 +133,12 @@ public final class MarkChunk extends MarkTagContainer {
     @Override
     protected void tickTickable(Tickable tickable) {
         tickable.onTickMarkChunk(this);
+    }
+
+    public void onPluginDisable(JavaPlugin plugin) {
+        removePlugin(plugin);
+        for (MarkBlock markBlock : blocks.values()) {
+            markBlock.removePlugin(plugin);
+        }
     }
 }

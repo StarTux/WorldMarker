@@ -9,6 +9,7 @@ import org.bukkit.Bukkit;
 import org.bukkit.Chunk;
 import org.bukkit.World;
 import org.bukkit.block.Block;
+import org.bukkit.plugin.java.JavaPlugin;
 
 public final class BlockMarker {
     static BlockMarker instance;
@@ -142,5 +143,11 @@ public final class BlockMarker {
     public static Stream<MarkChunk> streamAllLoadedChunks() {
         return instance.worlds.values().stream()
             .flatMap(w -> w.loadedChunks.values().stream());
+    }
+
+    public void onPluginDisable(JavaPlugin javaPlugin) {
+        for (MarkWorld markWorld : worlds.values()) {
+            markWorld.onPluginDisable(javaPlugin);
+        }
     }
 }

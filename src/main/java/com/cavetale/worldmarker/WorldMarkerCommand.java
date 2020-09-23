@@ -59,7 +59,7 @@ final class WorldMarkerCommand implements CommandExecutor {
             String id = args[0];
             markBlock.setId(id);
             if ("debug".equals(id)) {
-                markBlock.getPersistent("debug", EventListener.Debug.class, EventListener.Debug::new)
+                markBlock.getPersistent(plugin, "debug", EventListener.Debug.class, EventListener.Debug::new)
                     .test = args.length >= 2 ? args[1] : "-";
             }
             markBlock.save();
@@ -112,7 +112,7 @@ final class WorldMarkerCommand implements CommandExecutor {
             String id = args[0];
             markEntity.setId(id);
             if ("debug".equals(id) && args.length >= 1) {
-                markEntity.getPersistent("debug", EventListener.Debug.class, EventListener.Debug::new)
+                markEntity.getPersistent(plugin, "debug", EventListener.Debug.class, EventListener.Debug::new)
                     .test = args.length >= 2 ? args[1] : "-";
             }
             markEntity.save();
