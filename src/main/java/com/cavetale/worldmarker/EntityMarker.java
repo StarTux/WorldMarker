@@ -1,6 +1,7 @@
 package com.cavetale.worldmarker;
 
 import java.util.ArrayList;
+import java.util.List;
 import java.util.Map;
 import java.util.TreeMap;
 import java.util.stream.Stream;
@@ -93,5 +94,13 @@ public final class EntityMarker {
         for (MarkEntity markEntity : cache.values()) {
             markEntity.removePlugin(javaPlugin);
         }
+    }
+
+    public List<MarkEntity> getEntitiesWithId(@NonNull String id) {
+        List<MarkEntity> list = new ArrayList<>();
+        for (MarkEntity markEntity : cache.values()) {
+            if (markEntity.hasId(id)) list.add(markEntity);
+        }
+        return list;
     }
 }

@@ -1,7 +1,9 @@
 package com.cavetale.worldmarker;
 
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
+import java.util.List;
 import java.util.UUID;
 import java.util.stream.Stream;
 import lombok.NonNull;
@@ -120,8 +122,7 @@ public final class BlockMarker {
         return getBlock(block).hasId();
     }
 
-    public static Collection<MarkBlock> getBlocksWithin(@NonNull Block a,
-                                                        @NonNull Block b) {
+    public static Collection<MarkBlock> getBlocksWithin(@NonNull Block a, @NonNull Block b) {
         if (!a.getWorld().equals(b.getWorld())) {
             throw new IllegalArgumentException("Worlds do not match!");
         }
@@ -130,8 +131,7 @@ public final class BlockMarker {
                                          b.getX(), b.getY(), b.getZ());
     }
 
-    public static Collection<MarkBlock> getNearbyBlocks(@NonNull Block center,
-                                                        final int radius) {
+    public static Collection<MarkBlock> getNearbyBlocks(@NonNull Block center, final int radius) {
         return getBlocksWithin(center.getRelative(-radius, -radius, -radius),
                                center.getRelative(radius, radius, radius));
     }
@@ -149,5 +149,13 @@ public final class BlockMarker {
         for (MarkWorld markWorld : worlds.values()) {
             markWorld.onPluginDisable(javaPlugin);
         }
+    }
+
+    public List<MarkBlock> getBlocksWithId(@NonNull String id) {
+        List<MarkBlock> list = new ArrayList<>();
+        for (MarkWorld markWorld : worlds.values()) {
+            list.addAll(markWorld.getBlocksWithId(id));
+        }
+        return list;
     }
 }

@@ -256,4 +256,12 @@ public final class MarkWorld extends MarkTagContainer {
             markChunk.onPluginDisable(javaPlugin);
         }
     }
+
+    public List<MarkBlock> getBlocksWithId(@NonNull String id) {
+        List<MarkBlock> list = new ArrayList<>();
+        for (MarkChunk markChunk : loadedChunks.values()) {
+            list.addAll(markChunk.getBlocksWithId(id));
+        }
+        return list;
+    }
 }

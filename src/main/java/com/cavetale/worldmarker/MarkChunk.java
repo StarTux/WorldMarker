@@ -3,6 +3,7 @@ package com.cavetale.worldmarker;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Iterator;
+import java.util.List;
 import java.util.TreeMap;
 import java.util.stream.Stream;
 import lombok.NonNull;
@@ -21,9 +22,7 @@ public final class MarkChunk extends MarkTagContainer {
     int loadedTicks = 0;
     long lastUse;
 
-    MarkChunk(@NonNull final MarkRegion markRegion,
-              final int x, final int z, final long key,
-              final MarkTag tag) {
+    MarkChunk(@NonNull final MarkRegion markRegion, final int x, final int z, final long key, final MarkTag tag) {
         this.markRegion = markRegion;
         this.x = x;
         this.z = z;
@@ -140,5 +139,13 @@ public final class MarkChunk extends MarkTagContainer {
         for (MarkBlock markBlock : blocks.values()) {
             markBlock.removePlugin(plugin);
         }
+    }
+
+    public List<MarkBlock> getBlocksWithId(@NonNull String id) {
+        List<MarkBlock> list = new ArrayList<>();
+        for (MarkBlock markBlock : blocks.values()) {
+            if (markBlock.hasId(id)) list.add(markBlock);
+        }
+        return list;
     }
 }
