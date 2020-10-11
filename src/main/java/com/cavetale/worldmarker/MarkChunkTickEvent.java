@@ -8,6 +8,7 @@ import org.bukkit.event.HandlerList;
  * tick.  Listen to this in order to update marked blocks once per
  * tick, while they're loaded.
  */
+@Deprecated
 public final class MarkChunkTickEvent extends MarkChunkEvent {
     static final HandlerList HANDLERS = new HandlerList();
 
