@@ -31,6 +31,14 @@ public final class MarkEntity extends MarkTagContainer {
         return entity.getUniqueId();
     }
 
+    public boolean isValid() {
+        return entity.isValid();
+    }
+
+    public int getEntityId() {
+        return entity.getEntityId();
+    }
+
     void serializeToEntityTag() {
         lastSave = Util.nowInSeconds();
         prepareForSaving(); // calls onSave

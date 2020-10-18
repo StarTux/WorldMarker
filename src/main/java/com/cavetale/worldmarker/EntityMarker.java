@@ -76,6 +76,10 @@ public final class EntityMarker {
     void onTick() {
         long now = Util.nowInSeconds();
         for (MarkEntity entity : new ArrayList<>(cache.values())) {
+            if (!entity.isValid()) {
+                cache.remove(entity.getEntityId());
+                continue;
+            }
             entity.onTick();
             if (entity.dirty) {
                 long noSave = now - entity.lastSave;

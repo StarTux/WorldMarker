@@ -1,7 +1,8 @@
 package com.cavetale.worldmarker;
 
+import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.Iterator;
+import java.util.List;
 import java.util.Map;
 import java.util.function.Supplier;
 import java.util.logging.Level;
@@ -16,7 +17,6 @@ import org.bukkit.plugin.java.JavaPlugin;
 public abstract class MarkTagContainer {
     protected MarkTag tag; // This will be serialized to disk in some fashion
     private final Map<String, Persistent> persistentCache = new HashMap<>();
-    private final Map<String, Transient> transientCache = new HashMap<>();
 
     final MarkTag getTag() {
         if (tag == null) tag = new MarkTag();
@@ -74,10 +74,10 @@ public abstract class MarkTagContainer {
         tag.getData().put(key, value);
     }
 
-    public final void removeRawData(String key) {
-        if (tag == null) return;
-        if (!tag.hasData()) return;
-        tag.getData().remove(key);
+    public final boolean removeRawData(String key) {
+        if (tag == null) return false;
+        if (!tag.hasData()) return false;
+        return null != tag.getData().remove(key);
     }
 
     public final void resetRawData() {
@@ -88,9 +88,11 @@ public abstract class MarkTagContainer {
     public final void reset() {
         tag = null;
         persistentCache.clear();
-        transientCache.clear();
     }
 
+    /**
+     * Get the persistent data or deserialize it, or create it.
+     */
     public final <T extends Persistent> T getPersistent(JavaPlugin javaPlugin, String key, Class<T> type, Supplier<T> dfl) {
         // Either stored in cache...
         Persistent cached = persistentCache.get(key);
@@ -110,31 +112,31 @@ public abstract class MarkTagContainer {
             }
         }
         // ...or all new all fresh...
+        if (dfl == null) return null;
         T fresh = dfl.get();
         if (fresh != null) persistentCache.put(key, fresh);
         return fresh;
     }
 
+    /**
+     * Get the persistent data, only if it exists.
+     */
+    public final <T extends Persistent> T getPersistent(String key, Class<T> type) {
+        Persistent cached = persistentCache.get(key);
+        if (cached != null && type.isInstance(cached)) return type.cast(cached);
+        return null;
+    }
+
+    /**
+     * Remove persistent, along with its backing storage.
+     */
     public final boolean removePersistent(String key) {
         Persistent persistent = persistentCache.remove(key);
-        if (persistent == null) {
-            return false;
+        if (persistent != null) {
+            persistent.onUnload(this);
         }
-        removeRawData(key);
-        persistent.onUnload(this);
-        return true;
-    }
-
-    public final <T extends Transient> T getTransient(String key, Class<T> type, Supplier<T> dfl) {
-        Transient cached = transientCache.get(key);
-        if (cached != null && type.isInstance(cached)) return type.cast(cached);
-        T fresh = dfl.get();
-        if (fresh != null) transientCache.put(key, fresh);
-        return fresh;
-    }
-
-    public final boolean removeTransient(String key) {
-        return transientCache.remove(key) != null;
+        boolean wasRaw = removeRawData(key);
+        return wasRaw || persistent != null;
     }
 
     /**
@@ -146,19 +148,20 @@ public abstract class MarkTagContainer {
      * Every MarkBlock, Chunk and World will do this before saving to disk.
      */
     public void prepareForSaving() {
-        for (Map.Entry<String, Persistent> entry : persistentCache.entrySet()) {
-            String key = entry.getKey();
-            Persistent value = entry.getValue();
-            String json;
-            try {
-                value.onSave(this);
-                json = Json.serialize(value);
-            } catch (Exception e) {
-                String msg = getClass().getSimpleName() + "::prepareForSaving: " + key;
-                WorldMarkerPlugin.instance.getLogger().log(Level.SEVERE, msg, e);
-                continue;
+        for (String key : getPersistentKeys()) {
+            Persistent persistent = persistentCache.get(key);
+            if (persistent.shouldSave()) {
+                try {
+                    persistent.onSave(this);
+                    setRawData(key, Json.serialize(persistent));
+                } catch (Exception e) {
+                    String msg = getClass().getSimpleName() + "::prepareForSaving: " + key;
+                    WorldMarkerPlugin.instance.getLogger().log(Level.SEVERE, msg, e);
+                    continue;
+                }
+            } else {
+                removeRawData(key);
             }
-            setRawData(key, json);
         }
     }
 
@@ -167,25 +170,17 @@ public abstract class MarkTagContainer {
      * Prepare for saving and clear presistent and transient data.
      */
     void onUnload() {
-        for (Map.Entry<String, Persistent> entry : persistentCache.entrySet()) {
+        for (String key : getPersistentKeys()) {
+            Persistent persistent = persistentCache.get(key);
             try {
-                entry.getValue().onUnload(this);
+                persistent.onUnload(this);
             } catch (Exception e) {
-                String msg = getClass().getSimpleName() + "::onUnload: " + entry.getKey();
-                WorldMarkerPlugin.instance.getLogger().log(Level.SEVERE, msg, e);
-            }
-        }
-        for (Map.Entry<String, Transient> entry : transientCache.entrySet()) {
-            try {
-                entry.getValue().onUnload(this);
-            } catch (Exception e) {
-                String msg = getClass().getSimpleName() + "::onUnload: " + entry.getKey();
+                String msg = getClass().getSimpleName() + "::onUnload: " + key;
                 WorldMarkerPlugin.instance.getLogger().log(Level.SEVERE, msg, e);
             }
         }
         prepareForSaving();
         persistentCache.clear();
-        transientCache.clear();
     }
 
     protected abstract void tickTickable(Tickable t);
@@ -194,53 +189,41 @@ public abstract class MarkTagContainer {
      * Implementers should call super::onTick().
      */
     void onTick() {
-        for (Map.Entry<String, Persistent> entry : persistentCache.entrySet()) {
+        for (String key : getPersistentKeys()) {
+            Persistent persistent = persistentCache.get(key);
             try {
-                tickTickable(entry.getValue());
+                tickTickable(persistent);
             } catch (Exception e) {
-                String msg = getClass().getSimpleName() + "::onTick: " + entry.getKey();
-                WorldMarkerPlugin.instance.getLogger().log(Level.SEVERE, msg, e);
-            }
-        }
-        for (Map.Entry<String, Transient> entry : transientCache.entrySet()) {
-            try {
-                tickTickable(entry.getValue());
-            } catch (Exception e) {
-                String msg = getClass().getSimpleName() + "::onTick: " + entry.getKey();
+                String msg = getClass().getSimpleName() + "::onTick: " + key;
                 WorldMarkerPlugin.instance.getLogger().log(Level.SEVERE, msg, e);
             }
         }
     }
 
+    public List<String> getPersistentKeys() {
+        return new ArrayList<>(persistentCache.keySet());
+    }
+
     final void removePlugin(JavaPlugin plugin) {
         boolean didRemove = false;
-        for (Iterator<Map.Entry<String, Persistent>> iter = persistentCache.entrySet().iterator(); iter.hasNext();) {
-            Map.Entry<String, Persistent> it = iter.next();
-            Persistent persistent = it.getValue();
+        for (String key : getPersistentKeys()) {
+            Persistent persistent = persistentCache.get(key);
             if (persistent.getPlugin() != plugin) continue;
-            String key = it.getKey();
             try {
                 persistent.onUnload(this);
+                if (persistent.shouldSave()) {
+                    persistent.onSave(this);
+                    setRawData(key, Json.serialize(persistent));
+                } else {
+                    removeRawData(key);
+                }
             } catch (Exception e) {
                 String msg = getClass().getSimpleName() + "::removePlugin: " + key;
                 WorldMarkerPlugin.instance.getLogger().log(Level.SEVERE, msg, e);
             }
-            setRawData(key, Json.serialize(persistent));
-            iter.remove();
+            persistentCache.remove(key);
             didRemove = true;
         }
         if (didRemove) save();
-        for (Iterator<Map.Entry<String, Transient>> iter = transientCache.entrySet().iterator(); iter.hasNext();) {
-            Map.Entry<String, Transient> it = iter.next();
-            Transient trans = it.getValue();
-            if (trans.getPlugin() != plugin) continue;
-            try {
-                trans.onUnload(this);
-            } catch (Exception e) {
-                String msg = getClass().getSimpleName() + "::removePlugin: " + it.getKey();
-                WorldMarkerPlugin.instance.getLogger().log(Level.SEVERE, msg, e);
-            }
-            iter.remove();
-        }
     }
 }

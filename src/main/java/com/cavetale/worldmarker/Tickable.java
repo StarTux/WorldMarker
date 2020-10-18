@@ -1,7 +1,7 @@
 package com.cavetale.worldmarker;
 
 /**
- * Super-interface of Persistent and Transient.
+ * Super-interface of Persistent.
  */
 public interface Tickable {
     /**

@@ -7,7 +7,7 @@ import org.bukkit.inventory.meta.ItemMeta;
  * This extension of MarkTagContainer can only ever exist transiently
  * because items can disappear and reappear from one tick to the next.
  * Therefore, saving is done instantaneously. An instance should never
- * be cached, and the Transient framework should not be used.
+ * be cached.
  */
 public final class MarkItem extends MarkTagContainer {
     final WorldMarkerPlugin plugin;
