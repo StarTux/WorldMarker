@@ -7,20 +7,24 @@ import java.util.List;
 import java.util.UUID;
 import java.util.stream.Stream;
 import lombok.NonNull;
+import lombok.RequiredArgsConstructor;
 import org.bukkit.Bukkit;
 import org.bukkit.Chunk;
 import org.bukkit.World;
 import org.bukkit.block.Block;
 import org.bukkit.plugin.java.JavaPlugin;
 
+@RequiredArgsConstructor
 public final class BlockMarker {
     static BlockMarker instance;
     final WorldMarkerPlugin plugin;
     final HashMap<UUID, MarkWorld> worlds = new HashMap<>();
 
-    BlockMarker(@NonNull final WorldMarkerPlugin plugin) {
-        this.plugin = plugin;
+    public BlockMarker enable() {
         instance = this;
+        Bukkit.getScheduler().runTaskTimer(plugin, this::tick, 1L, 1L);
+        loadAllWorlds();
+        return this;
     }
 
     void loadAllWorlds() {
@@ -29,7 +33,7 @@ public final class BlockMarker {
         }
     }
 
-    void onTick() {
+    void tick() {
         for (World world : plugin.getServer().getWorlds()) {
             getWorld(world).onTick();
         }

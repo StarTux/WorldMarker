@@ -7,9 +7,9 @@ import org.bukkit.plugin.java.JavaPlugin;
 public final class WorldMarkerPlugin extends JavaPlugin {
     final Json json = new Json(this);
     @Getter static WorldMarkerPlugin instance;
-    final BlockMarker blockMarker = new BlockMarker(this);
-    final ItemMarker itemMarker = new ItemMarker(this);
-    final EntityMarker entityMarker = new EntityMarker(this);
+    BlockMarker blockMarker;
+    ItemMarker itemMarker;
+    EntityMarker entityMarker;
     final WorldMarkerCommand command = new WorldMarkerCommand(this);
     final EventListener eventListener = new EventListener(this);
 
@@ -18,11 +18,11 @@ public final class WorldMarkerPlugin extends JavaPlugin {
         instance = this;
         MarkTag.idKey = new NamespacedKey(this, "id");
         MarkTag.dataKey = new NamespacedKey(this, "data");
-        BlockMarker.instance.loadAllWorlds();
+        itemMarker = new ItemMarker(this).enable();
+        blockMarker = new BlockMarker(this).enable();
+        entityMarker = new EntityMarker(this).enable();
         eventListener.enable();
-        getServer().getScheduler().runTaskTimer(this, this::onTick, 1, 1);
         getCommand("worldmarker").setExecutor(command);
-        getServer().getScheduler().runTask(this, entityMarker::scanAllWorlds);
     }
 
     @Override
@@ -31,12 +31,6 @@ public final class WorldMarkerPlugin extends JavaPlugin {
         entityMarker.saveAll();
         blockMarker.clear();
         entityMarker.clear();
-    }
-
-    void onTick() {
-        blockMarker.onTick();
-        entityMarker.onTick();
-        itemMarker.onTick();
     }
 
     void onPluginDisable(JavaPlugin plugin) {

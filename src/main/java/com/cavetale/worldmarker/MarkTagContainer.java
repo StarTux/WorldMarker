@@ -200,7 +200,7 @@ public abstract class MarkTagContainer {
         }
     }
 
-    public List<String> getPersistentKeys() {
+    public final List<String> getPersistentKeys() {
         return new ArrayList<>(persistentCache.keySet());
     }
 

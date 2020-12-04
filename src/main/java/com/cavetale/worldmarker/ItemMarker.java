@@ -1,19 +1,20 @@
 package com.cavetale.worldmarker;
 
 import lombok.NonNull;
-import org.bukkit.entity.Player;
+import lombok.RequiredArgsConstructor;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.ItemMeta;
 import org.bukkit.persistence.PersistentDataContainer;
 import org.bukkit.persistence.PersistentDataType;
 
+@RequiredArgsConstructor
 public final class ItemMarker {
     final WorldMarkerPlugin plugin;
     static ItemMarker instance;
 
-    ItemMarker(@NonNull final WorldMarkerPlugin plugin) {
-        this.plugin = plugin;
+    public ItemMarker enable() {
         instance = this;
+        return this;
     }
 
     public MarkItem getItem(@NonNull ItemStack item) {
@@ -50,13 +51,5 @@ public final class ItemMarker {
     public static boolean hasId(@NonNull ItemStack item, @NonNull String id) {
         String itemId = getId(item);
         return itemId != null && itemId.equals(id);
-    }
-
-    void onTick() {
-        for (Player player : plugin.getServer().getOnlinePlayers()) {
-            for (ItemStack item : player.getInventory()) {
-                if (item == null) continue;
-            }
-        }
     }
 }

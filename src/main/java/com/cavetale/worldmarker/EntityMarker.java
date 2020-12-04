@@ -6,19 +6,23 @@ import java.util.Map;
 import java.util.TreeMap;
 import java.util.stream.Stream;
 import lombok.NonNull;
+import lombok.RequiredArgsConstructor;
 import org.bukkit.Bukkit;
 import org.bukkit.World;
 import org.bukkit.entity.Entity;
 import org.bukkit.plugin.java.JavaPlugin;
 
+@RequiredArgsConstructor
 public final class EntityMarker {
     static EntityMarker instance;
     final WorldMarkerPlugin plugin;
     final Map<Integer, MarkEntity> cache = new TreeMap<>();
 
-    EntityMarker(@NonNull final WorldMarkerPlugin plugin) {
+    public EntityMarker enable() {
         instance = this;
-        this.plugin = plugin;
+        Bukkit.getScheduler().runTaskTimer(plugin, this::tick, 1L, 1L);
+        Bukkit.getScheduler().runTask(plugin, this::scanAllWorlds);
+        return this;
     }
 
     void saveAll() {
@@ -73,7 +77,7 @@ public final class EntityMarker {
         }
     }
 
-    void onTick() {
+    void tick() {
         long now = Util.nowInSeconds();
         for (MarkEntity entity : new ArrayList<>(cache.values())) {
             if (!entity.isValid()) {
