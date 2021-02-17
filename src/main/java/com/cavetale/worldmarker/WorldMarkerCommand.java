@@ -1,5 +1,9 @@
 package com.cavetale.worldmarker;
 
+import com.cavetale.worldmarker.block.BlockMarker;
+import com.cavetale.worldmarker.entity.EntityMarker;
+import com.cavetale.worldmarker.item.ItemMarker;
+import com.cavetale.worldmarker.util.Util;
 import java.util.Arrays;
 import java.util.Map;
 import lombok.RequiredArgsConstructor;
@@ -62,7 +66,7 @@ final class WorldMarkerCommand implements CommandExecutor {
         case "list":
             if (args.length != 1) return false;
             Chunk chunk = block.getChunk();
-            Map<Block, String> map = BlockMarker.listIds(chunk);
+            Map<Block, String> map = BlockMarker.getAllBlockIds(chunk);
             player.sendMessage("Chunk at " + chunk.getX() + "," + chunk.getZ() + " has " + map.size() + " ids:");
             for (Map.Entry<Block, String> entry : map.entrySet()) {
                 player.sendMessage(Util.toString(entry.getKey()) + ": " + entry.getValue());

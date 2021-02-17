@@ -1,5 +1,7 @@
 package com.cavetale.worldmarker;
 
+import com.cavetale.worldmarker.block.BlockMarker;
+import com.cavetale.worldmarker.item.ItemMarker;
 import lombok.RequiredArgsConstructor;
 import org.bukkit.Bukkit;
 import org.bukkit.block.BlockState;
@@ -9,9 +11,13 @@ import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
 import org.bukkit.event.block.BlockDropItemEvent;
 import org.bukkit.event.block.BlockPlaceEvent;
+import org.bukkit.event.server.PluginDisableEvent;
+import org.bukkit.event.world.ChunkLoadEvent;
+import org.bukkit.event.world.ChunkUnloadEvent;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.persistence.PersistentDataContainer;
 import org.bukkit.persistence.PersistentDataType;
+import org.bukkit.plugin.java.JavaPlugin;
 
 /**
  * Conveniently listen for some actions which are otherwise
@@ -33,8 +39,8 @@ final class EventListener implements Listener {
      * marked items can be placed an picked up again. Namely, this
      * goes for player heads.
      */
-    @EventHandler(ignoreCancelled = true, priority = EventPriority.HIGHEST)
-    public void onBlockPlace(BlockPlaceEvent event) {
+    @EventHandler(ignoreCancelled = true, priority = EventPriority.LOWEST)
+    void onBlockPlace(BlockPlaceEvent event) {
         ItemStack item = event.getItemInHand();
         String id = ItemMarker.getId(item);
         if (id == null) return;
@@ -42,7 +48,7 @@ final class EventListener implements Listener {
         if (!(state instanceof TileState)) return;
         TileState tile = (TileState) state;
         PersistentDataContainer tag = tile.getPersistentDataContainer();
-        tag.set(WorldMarkerPlugin.idKey, PersistentDataType.STRING, id);
+        tag.set(WorldMarkerPlugin.ID_KEY, PersistentDataType.STRING, id);
         tile.update();
     }
 
@@ -50,17 +56,34 @@ final class EventListener implements Listener {
      * Unfreeze a stored item id from a broken block. See
      * `onBlockPlace()` for more details.
      */
-    @EventHandler(ignoreCancelled = true, priority = EventPriority.HIGHEST)
-    public void onBlockDropItem(BlockDropItemEvent event) {
+    @EventHandler(ignoreCancelled = true, priority = EventPriority.LOWEST)
+    void onBlockDropItem(BlockDropItemEvent event) {
         BlockState state = event.getBlockState();
         if (!(state instanceof TileState)) return;
         TileState tile = (TileState) state;
         PersistentDataContainer tag = tile.getPersistentDataContainer();
-        if (!tag.has(WorldMarkerPlugin.idKey, PersistentDataType.STRING)) return;
-        String id = tag.get(WorldMarkerPlugin.idKey, PersistentDataType.STRING);
+        if (!tag.has(WorldMarkerPlugin.ID_KEY, PersistentDataType.STRING)) return;
+        String id = tag.get(WorldMarkerPlugin.ID_KEY, PersistentDataType.STRING);
         if (event.getItems().size() != 1) return;
         ItemStack item = event.getItems().get(0).getItemStack();
         if (ItemMarker.hasId(item)) return;
         ItemMarker.setId(item, id);
+    }
+
+    @EventHandler(priority = EventPriority.MONITOR)
+    void onPluginDisable(PluginDisableEvent event) {
+        if (event.getPlugin() instanceof JavaPlugin) {
+            BlockMarker.onUnload((JavaPlugin) event.getPlugin());
+        }
+    }
+
+    @EventHandler(priority = EventPriority.LOWEST)
+    void onChunkLoad(ChunkLoadEvent event) {
+        BlockMarker.onChunkLoad(event.getChunk());
+    }
+
+    @EventHandler(priority = EventPriority.LOWEST)
+    void onChunkUnload(ChunkUnloadEvent event) {
+        BlockMarker.onChunkUnload(event.getChunk());
     }
 }
