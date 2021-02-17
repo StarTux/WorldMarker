@@ -1,114 +1,36 @@
 package com.cavetale.worldmarker;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
-import java.util.TreeMap;
-import java.util.stream.Stream;
 import lombok.NonNull;
-import lombok.RequiredArgsConstructor;
-import org.bukkit.Bukkit;
-import org.bukkit.World;
 import org.bukkit.entity.Entity;
-import org.bukkit.plugin.java.JavaPlugin;
+import org.bukkit.persistence.PersistentDataContainer;
+import org.bukkit.persistence.PersistentDataType;
 
-@RequiredArgsConstructor
 public final class EntityMarker {
-    static EntityMarker instance;
-    final WorldMarkerPlugin plugin;
-    final Map<Integer, MarkEntity> cache = new TreeMap<>();
-
-    public EntityMarker enable() {
-        instance = this;
-        Bukkit.getScheduler().runTaskTimer(plugin, this::tick, 1L, 1L);
-        Bukkit.getScheduler().runTask(plugin, this::scanAllWorlds);
-        return this;
-    }
-
-    void saveAll() {
-        for (MarkEntity entity : cache.values()) {
-            if (entity.dirty) entity.serializeToEntityTag();
-        }
-    }
-
-    void clear() {
-        cache.clear();
-    }
-
-    void exit(Entity entity) {
-        MarkEntity cached = cache.get(entity.getEntityId());
-        if (cached == null) return;
-        cached.onUnload();
-        if (cached.dirty) cached.serializeToEntityTag();
-        cache.remove(entity.getEntityId());
-    }
-
-    public static MarkEntity getEntity(Entity entity) {
-        MarkEntity markEntity = instance.cache.get(entity.getEntityId());
-        if (markEntity != null) return markEntity;
-        markEntity = new MarkEntity(instance.plugin, entity);
-        instance.cache.put(entity.getEntityId(), markEntity);
-        MarkEntityLoadEvent event = new MarkEntityLoadEvent(markEntity);
-        Bukkit.getPluginManager().callEvent(event);
-        return markEntity;
-    }
+    private EntityMarker() { }
 
     public static void setId(@NonNull Entity entity, @NonNull String id) {
-        getEntity(entity).setId(id);
+        PersistentDataContainer tag = entity.getPersistentDataContainer();
+        tag.set(WorldMarkerPlugin.idKey, PersistentDataType.STRING, id);
     }
 
     public static void resetId(@NonNull Entity entity) {
-        getEntity(entity).resetId();
+        PersistentDataContainer tag = entity.getPersistentDataContainer();
+        tag.remove(WorldMarkerPlugin.idKey);
     }
 
     public static String getId(@NonNull Entity entity) {
-        return getEntity(entity).getId();
+        PersistentDataContainer tag = entity.getPersistentDataContainer();
+        if (!tag.has(WorldMarkerPlugin.idKey, PersistentDataType.STRING)) return null;
+        return tag.get(WorldMarkerPlugin.idKey, PersistentDataType.STRING);
+    }
+
+    public static boolean hasId(@NonNull Entity entity) {
+        String itemId = getId(entity);
+        return itemId != null;
     }
 
     public static boolean hasId(@NonNull Entity entity, @NonNull String id) {
-        return getEntity(entity).hasId(id);
-    }
-
-    void scanAllWorlds() {
-        for (World world : plugin.getServer().getWorlds()) {
-            for (Entity entity : world.getEntities()) {
-                getEntity(entity);
-            }
-        }
-    }
-
-    void tick() {
-        long now = Util.nowInSeconds();
-        for (MarkEntity entity : new ArrayList<>(cache.values())) {
-            if (!entity.isValid()) {
-                cache.remove(entity.getEntityId());
-                continue;
-            }
-            entity.onTick();
-            if (entity.dirty) {
-                long noSave = now - entity.lastSave;
-                if (noSave > 60L) {
-                    entity.serializeToEntityTag();
-                }
-            }
-        }
-    }
-
-    public Stream<MarkEntity> streamAllLoadedEntities() {
-        return new ArrayList<>(cache.values()).stream();
-    }
-
-    public void onPluginDisable(JavaPlugin javaPlugin) {
-        for (MarkEntity markEntity : cache.values()) {
-            markEntity.removePlugin(javaPlugin);
-        }
-    }
-
-    public List<MarkEntity> getEntitiesWithId(@NonNull String id) {
-        List<MarkEntity> list = new ArrayList<>();
-        for (MarkEntity markEntity : cache.values()) {
-            if (markEntity.hasId(id)) list.add(markEntity);
-        }
-        return list;
+        String itemId = getId(entity);
+        return itemId != null && itemId.equals(id);
     }
 }

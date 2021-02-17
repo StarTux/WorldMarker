@@ -1,10 +1,7 @@
 package com.cavetale.worldmarker;
 
-import com.destroystokyo.paper.event.entity.EntityAddToWorldEvent;
-import com.destroystokyo.paper.event.entity.EntityRemoveFromWorldEvent;
 import lombok.RequiredArgsConstructor;
 import org.bukkit.Bukkit;
-import org.bukkit.World;
 import org.bukkit.block.BlockState;
 import org.bukkit.block.TileState;
 import org.bukkit.event.EventHandler;
@@ -12,12 +9,9 @@ import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
 import org.bukkit.event.block.BlockDropItemEvent;
 import org.bukkit.event.block.BlockPlaceEvent;
-import org.bukkit.event.server.PluginDisableEvent;
-import org.bukkit.event.world.WorldUnloadEvent;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.persistence.PersistentDataContainer;
 import org.bukkit.persistence.PersistentDataType;
-import org.bukkit.plugin.java.JavaPlugin;
 
 /**
  * Conveniently listen for some actions which are otherwise
@@ -29,22 +23,6 @@ final class EventListener implements Listener {
 
     public void enable() {
         Bukkit.getPluginManager().registerEvents(this, plugin);
-    }
-
-    @EventHandler(ignoreCancelled = true, priority = EventPriority.MONITOR)
-    void onWorldUnload(WorldUnloadEvent event) {
-        World world = event.getWorld();
-        BlockMarker.instance.unloadWorld(world);
-    }
-
-    @EventHandler(ignoreCancelled = true, priority = EventPriority.MONITOR)
-    void onEntityAddToWorld(EntityAddToWorldEvent event) {
-        EntityMarker.getEntity(event.getEntity());
-    }
-
-    @EventHandler(ignoreCancelled = true, priority = EventPriority.MONITOR)
-    void onEntityRemoveFromWorld(EntityRemoveFromWorldEvent event) {
-        EntityMarker.instance.exit(event.getEntity());
     }
 
     /**
@@ -64,7 +42,7 @@ final class EventListener implements Listener {
         if (!(state instanceof TileState)) return;
         TileState tile = (TileState) state;
         PersistentDataContainer tag = tile.getPersistentDataContainer();
-        tag.set(MarkTag.idKey, PersistentDataType.STRING, id);
+        tag.set(WorldMarkerPlugin.idKey, PersistentDataType.STRING, id);
         tile.update();
     }
 
@@ -78,65 +56,11 @@ final class EventListener implements Listener {
         if (!(state instanceof TileState)) return;
         TileState tile = (TileState) state;
         PersistentDataContainer tag = tile.getPersistentDataContainer();
-        if (!tag.has(MarkTag.idKey, PersistentDataType.STRING)) return;
-        String id = tag.get(MarkTag.idKey, PersistentDataType.STRING);
+        if (!tag.has(WorldMarkerPlugin.idKey, PersistentDataType.STRING)) return;
+        String id = tag.get(WorldMarkerPlugin.idKey, PersistentDataType.STRING);
         if (event.getItems().size() != 1) return;
         ItemStack item = event.getItems().get(0).getItemStack();
         if (ItemMarker.hasId(item)) return;
         ItemMarker.setId(item, id);
-    }
-
-    public static final class Debug implements Persistent {
-        String test = "";
-        int ticks = 0;
-
-        Debug() {
-            WorldMarkerPlugin.instance.getLogger().info("worldmarker::Debug::constructor");
-        }
-
-        @Override
-        public WorldMarkerPlugin getPlugin() {
-            return WorldMarkerPlugin.instance;
-        }
-
-        @Override
-        public void onUnload(MarkTagContainer container) {
-            WorldMarkerPlugin.instance.getLogger().info("worldmarker::Debug::onUnload " + container + " " + test);
-        }
-
-        @Override
-        public void onSave(MarkTagContainer container) {
-            WorldMarkerPlugin.instance.getLogger().info("worldmarker::Debug::onSave " + container + " " + test);
-        }
-
-        @Override
-        public void onTick(MarkTagContainer container) {
-            if (ticks % 20 == 0) {
-                WorldMarkerPlugin.instance.getLogger().info("worldmarker::Debug::onTick " + container + " " + test);
-            }
-            ticks += 1;
-        }
-    }
-
-    @EventHandler
-    public void onMarkChunkLoad(MarkChunkLoadEvent event) {
-        event.getChunk().streamBlocksWithId("debug")
-            .forEach(b -> {
-                    b.getPersistent(plugin, "debug", Debug.class, Debug::new);
-                });
-    }
-
-    @EventHandler
-    public void onMarkEntityLoad(MarkEntityLoadEvent event) {
-        if (event.getEntity().hasId("debug")) {
-            event.getEntity().getPersistent(plugin, "debug", Debug.class, Debug::new);
-        }
-    }
-
-    @EventHandler
-    public void onPluginDisable(PluginDisableEvent event) {
-        if (!(event.getPlugin() instanceof JavaPlugin)) return;
-        JavaPlugin javaPlugin = (JavaPlugin) event.getPlugin();
-        plugin.onPluginDisable(javaPlugin);
     }
 }

@@ -1,165 +1,138 @@
 package com.cavetale.worldmarker;
 
-import java.util.ArrayList;
-import java.util.Collection;
+import com.cavetale.worldmarker.util.Tags;;
 import java.util.HashMap;
-import java.util.List;
-import java.util.UUID;
-import java.util.stream.Stream;
+import java.util.Map;
+import java.util.TreeMap;
+import java.util.function.Function;
 import lombok.NonNull;
-import lombok.RequiredArgsConstructor;
-import org.bukkit.Bukkit;
 import org.bukkit.Chunk;
-import org.bukkit.World;
+import org.bukkit.NamespacedKey;
 import org.bukkit.block.Block;
-import org.bukkit.plugin.java.JavaPlugin;
+import org.bukkit.persistence.PersistentDataContainer;
+import org.bukkit.persistence.PersistentDataType;
 
-@RequiredArgsConstructor
 public final class BlockMarker {
-    static BlockMarker instance;
-    final WorldMarkerPlugin plugin;
-    final HashMap<UUID, MarkWorld> worlds = new HashMap<>();
+    private static final Map<Integer, NamespacedKey> LEVEL_KEY_MAP = new TreeMap<>();
+    private static final Map<NamespacedKey, Integer> KEY_LEVEL_MAP = new HashMap<>();
+    private static final NamespacedKey[][][] BLOCK_KEY_ARRAY = new NamespacedKey[16][16][16];
+    private static final Map<NamespacedKey, int[]> KEY_BLOCK_MAP = new HashMap<>();
 
-    public BlockMarker enable() {
-        instance = this;
-        Bukkit.getScheduler().runTaskTimer(plugin, this::tick, 1L, 1L);
-        loadAllWorlds();
-        return this;
-    }
+    private BlockMarker() { }
 
-    void loadAllWorlds() {
-        for (World world : plugin.getServer().getWorlds()) {
-            MarkWorld markWorld = getWorld(world);
+    static void enable(WorldMarkerPlugin plugin) {
+        for (int i = 0; i < 16; i += 1) {
+            NamespacedKey key = new NamespacedKey(plugin, "level" + i);
+            LEVEL_KEY_MAP.put(i, key);
+            KEY_LEVEL_MAP.put(key, i);
+        }
+        for (int y = 0; y < 16; y += 1) {
+            for (int z = 0; z < 16; z += 1) {
+                for (int x = 0; x < 16; x += 1) {
+                    NamespacedKey key = new NamespacedKey(plugin, "" + x + "." + y + "." + z);
+                    BLOCK_KEY_ARRAY[y][z][x] = key;
+                    KEY_BLOCK_MAP.put(key, new int[] {x, y, z});
+                }
+            }
         }
     }
 
-    void tick() {
-        for (World world : plugin.getServer().getWorlds()) {
-            getWorld(world).onTick();
+    /**
+     * Get the tag belonging to a block, optionally creating it.
+     * @param block the block
+     * @param create create missing sections?
+     * @param callback The function which can modify the located
+     * tag. The return value determines if changes should be saved or
+     * not.
+     */
+    public static PersistentDataContainer getTag(Block block, boolean create, Function<PersistentDataContainer, Boolean> callback) {
+        PersistentDataContainer tag = block.getChunk().getPersistentDataContainer();
+        int level = block.getY() >> 4;
+        NamespacedKey levelKey = LEVEL_KEY_MAP.get(level);
+        PersistentDataContainer levelTag;
+        if (!tag.has(levelKey, PersistentDataType.TAG_CONTAINER)) {
+            if (!create) return null;
+            levelTag = tag.getAdapterContext().newPersistentDataContainer();
+        } else {
+            levelTag = tag.get(levelKey, PersistentDataType.TAG_CONTAINER);
         }
-    }
-
-    void saveAll() {
-        for (MarkWorld markWorld : worlds.values()) {
-            markWorld.saveAll();
+        final int ix = block.getX() & 0xF;
+        final int iy = block.getY() & 0xF;
+        final int iz = block.getZ() & 0xF;
+        NamespacedKey blockKey = BLOCK_KEY_ARRAY[iy][iz][ix];
+        PersistentDataContainer blockTag;
+        if (!levelTag.has(blockKey, PersistentDataType.TAG_CONTAINER)) {
+            if (!create) return null;
+            blockTag = levelTag.getAdapterContext().newPersistentDataContainer();
+        } else {
+            blockTag = levelTag.get(blockKey, PersistentDataType.TAG_CONTAINER);
         }
-    }
-
-    void clear() {
-        worlds.clear();
-    }
-
-    public static MarkWorld getWorld(@NonNull World world) {
-        MarkWorld result = instance.worlds.get(world.getUID());
-        if (result == null) {
-            result = new MarkWorld(instance.plugin, world);
-            instance.worlds.put(world.getUID(), result);
+        if (callback != null) {
+            if (callback.apply(blockTag)) {
+                if (blockTag.isEmpty()) {
+                    levelTag.remove(blockKey);
+                } else {
+                    levelTag.set(blockKey, PersistentDataType.TAG_CONTAINER, blockTag);
+                }
+                if (levelTag.isEmpty()) {
+                    tag.remove(levelKey);
+                } else {
+                    tag.set(levelKey, PersistentDataType.TAG_CONTAINER, levelTag);
+                }
+            }
         }
-        return result;
-    }
-
-    void unloadWorld(@NonNull World world) {
-        MarkWorld markWorld = instance.worlds.get(world.getUID());
-        if (markWorld == null) return;
-        markWorld.onUnload();
-        markWorld.saveAll();
-        worlds.remove(world.getUID());
-    }
-
-    // World API
-
-    public static MarkWorld getWorld(@NonNull String name) {
-        World world = Bukkit.getWorld(name);
-        if (world == null) return null;
-        return getWorld(world);
-    }
-
-    // Chunk API
-
-    public static MarkChunk getChunk(@NonNull Chunk chunk) {
-        return getWorld(chunk.getWorld()).getChunk(chunk.getX(), chunk.getZ());
-    }
-
-    public static String getId(@NonNull Chunk chunk) {
-        return getChunk(chunk).getId();
-    }
-
-    public static void setId(@NonNull Chunk chunk, @NonNull String id) {
-        getChunk(chunk).setId(id);
-    }
-
-    public static void resetId(@NonNull Chunk chunk) {
-        getChunk(chunk).resetId();
-    }
-
-    // Block API
-
-    public static MarkBlock getBlock(@NonNull World world,
-                                     final int x, final int y, final int z) {
-        MarkWorld markWorld = getWorld(world);
-        if (markWorld == null) return null;
-        return markWorld.getBlock(x, y, z);
-    }
-
-    public static MarkBlock getBlock(@NonNull Block block) {
-        return getBlock(block.getWorld(),
-                        block.getX(), block.getY(), block.getZ());
+        return blockTag;
     }
 
     public static String getId(@NonNull Block block) {
-        return getBlock(block).getId();
+        PersistentDataContainer blockTag = getTag(block, false, null);
+        return blockTag != null ? Tags.getString(blockTag, WorldMarkerPlugin.idKey) : null;
     }
 
     public static void setId(@NonNull Block block, @NonNull String id) {
-        getBlock(block).setId(id);
+        getTag(block, true, tag -> {
+                Tags.set(tag, WorldMarkerPlugin.idKey, id);
+                return true;
+            });
     }
 
     public static void resetId(@NonNull Block block) {
-        getBlock(block).resetId();
-    }
-
-    public static boolean hasId(@NonNull Block block, @NonNull String id) {
-        return getBlock(block).hasId(id);
+        getTag(block, false, tag -> {
+                tag.remove(WorldMarkerPlugin.idKey);
+                return true;
+            });
     }
 
     public static boolean hasId(@NonNull Block block) {
-        return getBlock(block).hasId();
+        return getId(block) != null;
     }
 
-    public static Collection<MarkBlock> getBlocksWithin(@NonNull Block a, @NonNull Block b) {
-        if (!a.getWorld().equals(b.getWorld())) {
-            throw new IllegalArgumentException("Worlds do not match!");
+    public static boolean hasId(@NonNull Block block, @NonNull String id) {
+        return id.equals(getId(block));
+    }
+
+    public static Map<Block, String> listIds(Chunk chunk) {
+        Map<Block, String> result = new HashMap<>();
+        PersistentDataContainer tag = chunk.getPersistentDataContainer();
+        for (NamespacedKey levelKey : tag.getKeys()) {
+            Integer level = KEY_LEVEL_MAP.get(levelKey);
+            if (level == null) continue;
+            if (!tag.has(levelKey, PersistentDataType.TAG_CONTAINER)) continue;
+            PersistentDataContainer levelTag = tag.get(levelKey, PersistentDataType.TAG_CONTAINER);
+            for (NamespacedKey blockKey : levelTag.getKeys()) {
+                int[] vec = KEY_BLOCK_MAP.get(blockKey);
+                if (vec == null) continue;
+                if (!levelTag.has(blockKey, PersistentDataType.TAG_CONTAINER)) continue;
+                PersistentDataContainer blockTag = levelTag.get(blockKey, PersistentDataType.TAG_CONTAINER);
+                if (!blockTag.has(WorldMarkerPlugin.idKey, PersistentDataType.STRING)) continue;
+                final int ix = vec[0];
+                final int iy = vec[1];
+                final int iz = vec[2];
+                Block block = chunk.getBlock(ix, iy + (level << 4), iz);
+                String id = blockTag.get(WorldMarkerPlugin.idKey, PersistentDataType.STRING);
+                result.put(block, id);
+            }
         }
-        MarkWorld markWorld = getWorld(a.getWorld());
-        return markWorld.getBlocksWithin(a.getX(), a.getY(), a.getZ(),
-                                         b.getX(), b.getY(), b.getZ());
-    }
-
-    public static Collection<MarkBlock> getNearbyBlocks(@NonNull Block center, final int radius) {
-        return getBlocksWithin(center.getRelative(-radius, -radius, -radius),
-                               center.getRelative(radius, radius, radius));
-    }
-
-    public static Collection<MarkBlock> getBlocks(@NonNull Chunk chunk) {
-        return getWorld(chunk.getWorld()).getChunk(chunk.getX(), chunk.getZ()).getBlocks();
-    }
-
-    public static Stream<MarkChunk> streamAllLoadedChunks() {
-        return instance.worlds.values().stream()
-            .flatMap(w -> w.loadedChunks.values().stream());
-    }
-
-    public void onPluginDisable(JavaPlugin javaPlugin) {
-        for (MarkWorld markWorld : worlds.values()) {
-            markWorld.onPluginDisable(javaPlugin);
-        }
-    }
-
-    public List<MarkBlock> getBlocksWithId(@NonNull String id) {
-        List<MarkBlock> list = new ArrayList<>();
-        for (MarkWorld markWorld : worlds.values()) {
-            list.addAll(markWorld.getBlocksWithId(id));
-        }
-        return list;
+        return result;
     }
 }
