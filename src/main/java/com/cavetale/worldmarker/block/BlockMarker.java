@@ -98,6 +98,13 @@ public final class BlockMarker {
     }
 
     public static void setId(@NonNull Block block, @NonNull String id) {
+        for (BlockMarkerSlot slot : SLOTS) {
+            try {
+                slot.hook.onBlockSet(block, id);
+            } catch (Throwable t) {
+                t.printStackTrace();
+            }
+        }
         getTag(block, true, tag -> {
                 Tags.set(tag, WorldMarkerPlugin.ID_KEY, id);
                 return true;
@@ -105,6 +112,13 @@ public final class BlockMarker {
     }
 
     public static void resetId(@NonNull Block block) {
+        for (BlockMarkerSlot slot : SLOTS) {
+            try {
+                slot.hook.onBlockReset(block);
+            } catch (Throwable t) {
+                t.printStackTrace();
+            }
+        }
         getTag(block, false, tag -> {
                 tag.remove(WorldMarkerPlugin.ID_KEY);
                 return true;
