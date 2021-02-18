@@ -3,7 +3,10 @@ package com.cavetale.worldmarker;
 import com.cavetale.worldmarker.block.BlockMarker;
 import com.cavetale.worldmarker.entity.EntityMarker;
 import com.cavetale.worldmarker.item.ItemMarker;
+import com.cavetale.worldmarker.util.Tags;
 import com.cavetale.worldmarker.util.Util;
+import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
 import java.util.Arrays;
 import java.util.Map;
 import lombok.RequiredArgsConstructor;
@@ -63,7 +66,7 @@ final class WorldMarkerCommand implements CommandExecutor {
             BlockMarker.resetId(block);
             player.sendMessage("Tag at " + Util.toString(block) + " set to: " + BlockMarker.getId(block));
             return true;
-        case "list":
+        case "list": {
             if (args.length != 1) return false;
             Chunk chunk = block.getChunk();
             Map<Block, String> map = BlockMarker.getAllBlockIds(chunk);
@@ -72,6 +75,14 @@ final class WorldMarkerCommand implements CommandExecutor {
                 player.sendMessage(Util.toString(entry.getKey()) + ": " + entry.getValue());
             }
             return true;
+        }
+        case "debug": {
+            if (args.length != 1) return false;
+            Chunk chunk = block.getChunk();
+            player.sendMessage("All container data in chunk " + chunk.getX() + "," + chunk.getZ() + ":");
+            Gson gson = new GsonBuilder().setPrettyPrinting().create();
+            player.sendMessage(gson.toJson(Tags.toMap(chunk.getPersistentDataContainer())));
+        }
         default: return false;
         }
     }

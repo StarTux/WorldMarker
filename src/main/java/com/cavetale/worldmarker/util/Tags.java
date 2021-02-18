@@ -1,5 +1,10 @@
 package com.cavetale.worldmarker.util;
 
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import org.bukkit.NamespacedKey;
@@ -11,6 +16,21 @@ import org.bukkit.persistence.PersistentDataType;
  */
 public final class Tags {
     private Tags() { }
+
+    public static final PersistentDataType[] ALL_DATA_TYPES = {
+        PersistentDataType.BYTE,
+        PersistentDataType.BYTE_ARRAY,
+        PersistentDataType.DOUBLE,
+        PersistentDataType.FLOAT,
+        PersistentDataType.INTEGER,
+        PersistentDataType.INTEGER_ARRAY,
+        PersistentDataType.LONG,
+        PersistentDataType.LONG_ARRAY,
+        PersistentDataType.SHORT,
+        PersistentDataType.STRING,
+        PersistentDataType.TAG_CONTAINER,
+        PersistentDataType.TAG_CONTAINER_ARRAY
+    };
 
     public static Byte getByte(PersistentDataContainer tag, NamespacedKey key) {
         return tag.has(key, PersistentDataType.BYTE) ? tag.get(key, PersistentDataType.BYTE) : null;
@@ -160,5 +180,60 @@ public final class Tags {
             tag.set(key, PersistentDataType.TAG_CONTAINER, newTag);
         }
         return true;
+    }
+
+    public static Object get(PersistentDataContainer tag, NamespacedKey key) {
+        for (PersistentDataType type : ALL_DATA_TYPES) {
+            if (tag.has(key, type)) return tag.get(key, type);
+        }
+        return null;
+    }
+
+    /**
+     * Turn a generic object from a PersistentDataContainer into a
+     * Java Object. Primitive types will stay primitive. Containers
+     * will become maps. Arrays will become Lists.
+     * Works recursively!
+     */
+    public static Object toJavaObject(Object o) {
+        if (o == null) return null;
+        if (o instanceof PersistentDataContainer) {
+            return toMap((PersistentDataContainer) o);
+        } else if (o instanceof Object[]) {
+            Object[] array = (Object[]) o;
+            List<Object> list = new ArrayList<>(array.length);
+            for (Object p : array) {
+                list.add(toJavaObject(p));
+            }
+            return list;
+        } else if (o instanceof byte[]) {
+            return Arrays.asList((byte[]) o);
+        } else if (o instanceof int[]) {
+            return Arrays.asList((int[]) o);
+        } else if (o instanceof long[]) {
+            return Arrays.asList((long[]) o);
+        } else if (o instanceof Number) {
+            return (Number) o;
+        } else if (o instanceof Boolean) {
+            return (Boolean) o;
+        } else if (o instanceof String) {
+            return (String) o;
+        } else {
+            return o.toString();
+        }
+    }
+
+    /**
+     * Works recursively!
+     */
+    public static Map<NamespacedKey, Object> toMap(PersistentDataContainer tag) {
+        Map map = new LinkedHashMap<>();
+        for (NamespacedKey key : tag.getKeys()) {
+            Object o = get(tag, key);
+            Object p = toJavaObject(o);
+            if (p == null) continue;
+            map.put(key, p);
+        }
+        return map;
     }
 }
