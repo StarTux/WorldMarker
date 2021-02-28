@@ -17,6 +17,11 @@ public final class ItemMarker {
         item.setItemMeta(meta);
     }
 
+    public static void setId(@NonNull ItemMeta meta, @NonNull String id) {
+        PersistentDataContainer tag = meta.getPersistentDataContainer();
+        tag.set(WorldMarkerPlugin.ID_KEY, PersistentDataType.STRING, id);
+    }
+
     public static void resetId(@NonNull ItemStack item) {
         ItemMeta meta = item.getItemMeta();
         PersistentDataContainer tag = meta.getPersistentDataContainer();
