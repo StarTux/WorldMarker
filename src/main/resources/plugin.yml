@@ -12,7 +12,16 @@ commands:
     aliases: []
     description: WorldMarker Command
     permission: worldmarker.worldmarker
-    usage: /<command>
+    usage: |-
+      /worldmarker block get
+      /worldmarker block set <id>
+      /worldmarker block reset
+      /worldmarker block list
+      /worldmarker block debug
+      /worldmarker entity get
+      /worldmarker entity set <id>
+      /worldmarker entity reset
+      /worldmarker item [id] - Get or set item id
 permissions:
   worldmarker.worldmarker:
     description: Use /worldmarker

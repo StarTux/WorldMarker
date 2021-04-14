@@ -24,10 +24,7 @@ final class WorldMarkerCommand implements CommandExecutor {
     final WorldMarkerPlugin plugin;
 
     @Override
-    public boolean onCommand(final CommandSender sender,
-                             final Command command,
-                             final String alias,
-                             final String[] args) {
+    public boolean onCommand(final CommandSender sender, final Command command, final String alias, final String[] args) {
         if (args.length == 0) return false;
         String[] argl = Arrays.copyOfRange(args, 1, args.length);
         switch (args[0]) {
@@ -50,17 +47,18 @@ final class WorldMarkerCommand implements CommandExecutor {
             player.sendMessage("No target block!");
             return true;
         }
-        if (args.length == 0) {
+        switch (args[0]) {
+        case "get":
+            if (args.length != 1) return false;
             player.sendMessage("Tag at " + Util.toString(block) + ": " + BlockMarker.getId(block));
             return true;
-        }
-        switch (args[0]) {
-        case "set":
+        case "set": {
             if (args.length < 2) return false;
             String val = String.join(" ", Arrays.copyOfRange(args, 1, args.length));
             BlockMarker.setId(block, val);
             player.sendMessage("Tag at " + Util.toString(block) + " set to: " + BlockMarker.getId(block));
             return true;
+        }
         case "reset":
             if (args.length != 1) return false;
             BlockMarker.resetId(block);
@@ -116,7 +114,7 @@ final class WorldMarkerCommand implements CommandExecutor {
             sender.sendMessage("Player expected!");
             return true;
         }
-        if (args.length != 0) return false;
+        if (args.length == 0) return false;
         Player player = (Player) sender;
         Entity entity = player.getTargetEntity(6);
         if (entity == null) {
@@ -124,8 +122,25 @@ final class WorldMarkerCommand implements CommandExecutor {
             return true;
         }
         String it = entity.getType().name().toLowerCase();
-        player.sendMessage("Tag of " + it + ": " + EntityMarker.getId(entity));
-        return true;
+        switch (args[0]) {
+        case "get":
+            if (args.length != 1) return false;
+            player.sendMessage("Tag of " + it + ": " + EntityMarker.getId(entity));
+            return true;
+        case "set": {
+            if (args.length < 2) return false;
+            String val = String.join(" ", Arrays.copyOfRange(args, 1, args.length));
+            EntityMarker.setId(entity, val);
+            player.sendMessage("Tag of " + it + " set to: " + EntityMarker.getId(entity));
+            return true;
+        }
+        case "reset":
+            if (args.length != 1) return false;
+            EntityMarker.resetId(entity);
+            player.sendMessage("Tag of " + it + " reset: " + EntityMarker.getId(entity));
+            return true;
+        default: return false;
+        }
     }
 
     boolean debugCommand(CommandSender sender, String[] args) {
