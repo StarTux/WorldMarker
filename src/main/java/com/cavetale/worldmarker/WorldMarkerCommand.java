@@ -41,6 +41,7 @@ final class WorldMarkerCommand implements CommandExecutor {
             sender.sendMessage("Player expected!");
             return true;
         }
+        if (args.length == 0) return false;
         Player player = (Player) sender;
         Block block = player.getTargetBlock(6);
         if (block == null) {
