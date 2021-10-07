@@ -183,7 +183,7 @@ public final class Tags {
     }
 
     public static Object get(PersistentDataContainer tag, NamespacedKey key) {
-        for (PersistentDataType type : ALL_DATA_TYPES) {
+        for (PersistentDataType<?, ?> type : ALL_DATA_TYPES) {
             if (tag.has(key, type)) return tag.get(key, type);
         }
         return null;
@@ -227,7 +227,7 @@ public final class Tags {
      * Works recursively!
      */
     public static Map<NamespacedKey, Object> toMap(PersistentDataContainer tag) {
-        Map map = new LinkedHashMap<>();
+        Map<NamespacedKey, Object> map = new LinkedHashMap<>();
         for (NamespacedKey key : tag.getKeys()) {
             Object o = get(tag, key);
             Object p = toJavaObject(o);
