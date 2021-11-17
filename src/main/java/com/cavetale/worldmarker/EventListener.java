@@ -10,7 +10,7 @@ import org.bukkit.Bukkit;
 import org.bukkit.Material;
 import org.bukkit.block.Block;
 import org.bukkit.block.BlockState;
-import org.bukkit.block.TileState;
+import org.bukkit.block.Skull;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
@@ -44,7 +44,7 @@ final class EventListener implements Listener {
 
     /**
      * For items which can be placed, if the corresponding block is a
-     * TileState, "freeze" the item id in the TileState.
+     * Skull, "freeze" the item id in the Skull.
      * This block will not be treated like a marked block because the
      * latter uses its own custom storage. The benefit of this is that
      * marked items can be placed an picked up again. Namely, this
@@ -56,11 +56,11 @@ final class EventListener implements Listener {
         String id = ItemMarker.getId(item);
         if (id == null) return;
         BlockState state = event.getBlock().getState();
-        if (!(state instanceof TileState)) return;
-        TileState tile = (TileState) state;
-        PersistentDataContainer tag = tile.getPersistentDataContainer();
+        if (!(state instanceof Skull)) return;
+        Skull skull = (Skull) state;
+        PersistentDataContainer tag = skull.getPersistentDataContainer();
         tag.set(WorldMarkerPlugin.ID_KEY, PersistentDataType.STRING, id);
-        tile.update();
+        skull.update();
     }
 
     /**
@@ -70,9 +70,9 @@ final class EventListener implements Listener {
     @EventHandler(ignoreCancelled = true, priority = EventPriority.LOWEST)
     void onBlockDropItem(BlockDropItemEvent event) {
         BlockState state = event.getBlockState();
-        if (!(state instanceof TileState)) return;
-        TileState tile = (TileState) state;
-        PersistentDataContainer tag = tile.getPersistentDataContainer();
+        if (!(state instanceof Skull)) return;
+        Skull skull = (Skull) state;
+        PersistentDataContainer tag = skull.getPersistentDataContainer();
         if (!tag.has(WorldMarkerPlugin.ID_KEY, PersistentDataType.STRING)) return;
         String id = tag.get(WorldMarkerPlugin.ID_KEY, PersistentDataType.STRING);
         if (event.getItems().size() != 1) return; // necessary?
@@ -83,9 +83,9 @@ final class EventListener implements Listener {
 
     private void onBlockPop(final Block block) {
         BlockState state = block.getState();
-        if (!(state instanceof TileState)) return;
-        TileState tile = (TileState) state;
-        PersistentDataContainer tag = tile.getPersistentDataContainer();
+        if (!(state instanceof Skull)) return;
+        Skull skull = (Skull) state;
+        PersistentDataContainer tag = skull.getPersistentDataContainer();
         if (!tag.has(WorldMarkerPlugin.ID_KEY, PersistentDataType.STRING)) return;
         String id = tag.get(WorldMarkerPlugin.ID_KEY, PersistentDataType.STRING);
         poppedBlocks.put(block, id);
