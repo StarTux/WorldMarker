@@ -81,6 +81,7 @@ final class WorldMarkerCommand implements CommandExecutor {
             player.sendMessage("All container data in chunk " + chunk.getX() + "," + chunk.getZ() + ":");
             Gson gson = new GsonBuilder().setPrettyPrinting().create();
             player.sendMessage(gson.toJson(Tags.toMap(chunk.getPersistentDataContainer())));
+            return true;
         }
         default: return false;
         }
