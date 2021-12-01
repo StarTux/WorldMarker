@@ -29,7 +29,7 @@ public final class BlockMarker {
     private BlockMarker() { }
 
     public static void enable(WorldMarkerPlugin plugin) {
-        for (int i = 0; i < 16; i += 1) {
+        for (int i = -4; i < 20; i += 1) {
             NamespacedKey key = new NamespacedKey(plugin, "level." + i);
             LEVEL_KEY_MAP.put(i, key);
             KEY_LEVEL_MAP.put(key, i);
