@@ -6,11 +6,11 @@ import com.cavetale.worldmarker.item.ItemMarker;
 import com.cavetale.worldmarker.util.Tags;
 import com.cavetale.worldmarker.util.Util;
 import com.google.gson.Gson;
-import com.google.gson.GsonBuilder;
 import java.util.Arrays;
 import java.util.Map;
 import lombok.RequiredArgsConstructor;
 import org.bukkit.Chunk;
+import org.bukkit.NamespacedKey;
 import org.bukkit.block.Block;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandExecutor;
@@ -79,8 +79,10 @@ final class WorldMarkerCommand implements CommandExecutor {
             if (args.length != 1) return false;
             Chunk chunk = block.getChunk();
             player.sendMessage("All container data in chunk " + chunk.getX() + "," + chunk.getZ() + ":");
-            Gson gson = new GsonBuilder().setPrettyPrinting().create();
-            player.sendMessage(gson.toJson(Tags.toMap(chunk.getPersistentDataContainer())));
+            Gson gson = new Gson();
+            for (Map.Entry<NamespacedKey, Object> entry : Tags.toMap(chunk.getPersistentDataContainer()).entrySet()) {
+                player.sendMessage(entry.getKey() + ": " + gson.toJson(entry.getValue()));
+            }
             return true;
         }
         default: return false;
