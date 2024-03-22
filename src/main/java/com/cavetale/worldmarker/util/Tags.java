@@ -36,6 +36,10 @@ public final class Tags {
         return tag.has(key, PersistentDataType.BYTE) ? tag.get(key, PersistentDataType.BYTE) : null;
     }
 
+    public static byte getByte(PersistentDataContainer tag, NamespacedKey key, byte dfl) {
+        return tag.has(key, PersistentDataType.BYTE) ? tag.get(key, PersistentDataType.BYTE) : dfl;
+    }
+
     public static byte[] getByteArray(PersistentDataContainer tag, NamespacedKey key) {
         return tag.has(key, PersistentDataType.BYTE_ARRAY) ? tag.get(key, PersistentDataType.BYTE_ARRAY) : null;
     }
@@ -44,12 +48,24 @@ public final class Tags {
         return tag.has(key, PersistentDataType.DOUBLE) ? tag.get(key, PersistentDataType.DOUBLE) : null;
     }
 
+    public static double getDouble(PersistentDataContainer tag, NamespacedKey key, double dfl) {
+        return tag.has(key, PersistentDataType.DOUBLE) ? tag.get(key, PersistentDataType.DOUBLE) : dfl;
+    }
+
     public static Float getFloat(PersistentDataContainer tag, NamespacedKey key) {
         return tag.has(key, PersistentDataType.FLOAT) ? tag.get(key, PersistentDataType.FLOAT) : null;
     }
 
+    public static float getFloat(PersistentDataContainer tag, NamespacedKey key, float dfl) {
+        return tag.has(key, PersistentDataType.FLOAT) ? tag.get(key, PersistentDataType.FLOAT) : dfl;
+    }
+
     public static Integer getInt(PersistentDataContainer tag, NamespacedKey key) {
         return tag.has(key, PersistentDataType.INTEGER) ? tag.get(key, PersistentDataType.INTEGER) : null;
+    }
+
+    public static int getInt(PersistentDataContainer tag, NamespacedKey key, int dfl) {
+        return tag.has(key, PersistentDataType.INTEGER) ? tag.get(key, PersistentDataType.INTEGER) : dfl;
     }
 
     public static int[] getIntArray(PersistentDataContainer tag, NamespacedKey key) {
@@ -60,6 +76,10 @@ public final class Tags {
         return tag.has(key, PersistentDataType.LONG) ? tag.get(key, PersistentDataType.LONG) : null;
     }
 
+    public static long getLong(PersistentDataContainer tag, NamespacedKey key, long dfl) {
+        return tag.has(key, PersistentDataType.LONG) ? tag.get(key, PersistentDataType.LONG) : dfl;
+    }
+
     public static long[] getLongArray(PersistentDataContainer tag, NamespacedKey key) {
         return tag.has(key, PersistentDataType.LONG_ARRAY) ? tag.get(key, PersistentDataType.LONG_ARRAY) : null;
     }
@@ -68,8 +88,16 @@ public final class Tags {
         return tag.has(key, PersistentDataType.SHORT) ? tag.get(key, PersistentDataType.SHORT) : null;
     }
 
+    public static short getShort(PersistentDataContainer tag, NamespacedKey key, short dfl) {
+        return tag.has(key, PersistentDataType.SHORT) ? tag.get(key, PersistentDataType.SHORT) : dfl;
+    }
+
     public static String getString(PersistentDataContainer tag, NamespacedKey key) {
         return tag.has(key, PersistentDataType.STRING) ? tag.get(key, PersistentDataType.STRING) : null;
+    }
+
+    public static String getString(PersistentDataContainer tag, NamespacedKey key, String dfl) {
+        return tag.has(key, PersistentDataType.STRING) ? tag.get(key, PersistentDataType.STRING) : dfl;
     }
 
     public static PersistentDataContainer getTag(PersistentDataContainer tag, NamespacedKey key) {
