@@ -29,7 +29,6 @@ public final class Tags {
         PersistentDataType.SHORT,
         PersistentDataType.STRING,
         PersistentDataType.TAG_CONTAINER,
-        PersistentDataType.TAG_CONTAINER_ARRAY
     };
 
     public static Byte getByte(PersistentDataContainer tag, NamespacedKey key) {
@@ -104,8 +103,11 @@ public final class Tags {
         return tag.has(key, PersistentDataType.TAG_CONTAINER) ? tag.get(key, PersistentDataType.TAG_CONTAINER) : null;
     }
 
-    public static PersistentDataContainer[] getTagArray(PersistentDataContainer tag, NamespacedKey key) {
-        return tag.has(key, PersistentDataType.TAG_CONTAINER_ARRAY) ? tag.get(key, PersistentDataType.TAG_CONTAINER_ARRAY) : null;
+    public static List<PersistentDataContainer> getTagArray(PersistentDataContainer tag, NamespacedKey key) {
+        if (!tag.has(key, PersistentDataType.LIST.dataContainers())) {
+            return null;
+        }
+        return tag.get(key, PersistentDataType.LIST.dataContainers());
     }
 
     public static void set(PersistentDataContainer tag, NamespacedKey key, byte value) {
@@ -152,8 +154,8 @@ public final class Tags {
         tag.set(key, PersistentDataType.TAG_CONTAINER, value);
     }
 
-    public static void set(PersistentDataContainer tag, NamespacedKey key, PersistentDataContainer[] value) {
-        tag.set(key, PersistentDataType.TAG_CONTAINER_ARRAY, value);
+    public static void set(PersistentDataContainer tag, NamespacedKey key, List<PersistentDataContainer> value) {
+        tag.set(key, PersistentDataType.LIST.dataContainers(), value);
     }
 
     /**
@@ -210,6 +212,7 @@ public final class Tags {
         return true;
     }
 
+    @Deprecated
     public static Object get(PersistentDataContainer tag, NamespacedKey key) {
         for (PersistentDataType<?, ?> type : ALL_DATA_TYPES) {
             if (tag.has(key, type)) return tag.get(key, type);

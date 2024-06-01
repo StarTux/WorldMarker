@@ -43,7 +43,7 @@ final class WorldMarkerCommand implements CommandExecutor {
         }
         if (args.length == 0) return false;
         Player player = (Player) sender;
-        Block block = player.getTargetBlock(6);
+        Block block = player.getTargetBlockExact(6);
         if (block == null) {
             player.sendMessage("No target block!");
             return true;
