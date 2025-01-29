@@ -92,6 +92,35 @@ public final class BlockMarker {
         return blockTag;
     }
 
+    public static PersistentDataContainer getTag(Block block) {
+        return getTag(block, false, null);
+    }
+
+    public static boolean clearTag(Block block) {
+        PersistentDataContainer tag = block.getChunk().getPersistentDataContainer();
+        int level = block.getY() >> 4;
+        NamespacedKey levelKey = LEVEL_KEY_MAP.get(level);
+        PersistentDataContainer levelTag;
+        if (!tag.has(levelKey, PersistentDataType.TAG_CONTAINER)) {
+            return false;
+        }
+        levelTag = tag.get(levelKey, PersistentDataType.TAG_CONTAINER);
+        final int ix = block.getX() & 0xF;
+        final int iy = block.getY() & 0xF;
+        final int iz = block.getZ() & 0xF;
+        NamespacedKey blockKey = BLOCK_KEY_ARRAY[iy][iz][ix];
+        if (!levelTag.has(blockKey, PersistentDataType.TAG_CONTAINER)) {
+            return false;
+        }
+        levelTag.remove(blockKey);
+        if (levelTag.isEmpty()) {
+            tag.remove(levelKey);
+        } else {
+            tag.set(levelKey, PersistentDataType.TAG_CONTAINER, levelTag);
+        }
+        return true;
+    }
+
     public static String getId(@NonNull Block block) {
         PersistentDataContainer blockTag = getTag(block, false, null);
         return blockTag != null ? Tags.getString(blockTag, WorldMarkerPlugin.ID_KEY) : null;
