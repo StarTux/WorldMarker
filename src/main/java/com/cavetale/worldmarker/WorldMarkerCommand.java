@@ -18,6 +18,11 @@ import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
+import org.bukkit.persistence.PersistentDataContainer;
+import static net.kyori.adventure.text.Component.text;
+import static net.kyori.adventure.text.Component.textOfChildren;
+import static net.kyori.adventure.text.format.NamedTextColor.*;
+import static net.kyori.adventure.text.format.TextDecoration.*;
 
 @RequiredArgsConstructor
 final class WorldMarkerCommand implements CommandExecutor {
@@ -49,10 +54,27 @@ final class WorldMarkerCommand implements CommandExecutor {
             return true;
         }
         switch (args[0]) {
-        case "get":
+        case "get": {
             if (args.length != 1) return false;
-            player.sendMessage("Tag at " + Util.toString(block) + ": " + BlockMarker.getId(block));
+            final String id = BlockMarker.getId(block);
+            player.sendMessage(textOfChildren(text("Id at ", GRAY),
+                                              text(Util.toString(block), WHITE),
+                                              text(": ", DARK_GRAY),
+                                              (id != null
+                                               ? text(id, YELLOW)
+                                               : text("null", DARK_GRAY, ITALIC))));
+            final PersistentDataContainer tag = BlockMarker.getTag(block);
+            if (tag != null) {
+                player.sendMessage(text("Tag {", GRAY));
+                for (Map.Entry<NamespacedKey, Object> entry : Tags.toMap(tag).entrySet()) {
+                    player.sendMessage(textOfChildren(text("  " + entry.getKey(), GRAY),
+                                                      text(": ", DARK_GRAY),
+                                                      text("" + entry.getValue(), WHITE)));
+                }
+                player.sendMessage(text("}", GRAY));
+            }
             return true;
+        }
         case "set": {
             if (args.length < 2) return false;
             String val = String.join(" ", Arrays.copyOfRange(args, 1, args.length));
