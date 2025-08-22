@@ -29,6 +29,18 @@ public final class Tags {
         PersistentDataType.SHORT,
         PersistentDataType.STRING,
         PersistentDataType.TAG_CONTAINER,
+        PersistentDataType.LIST.booleans(),
+        PersistentDataType.LIST.byteArrays(),
+        PersistentDataType.LIST.bytes(),
+        PersistentDataType.LIST.dataContainers(),
+        PersistentDataType.LIST.doubles(),
+        PersistentDataType.LIST.floats(),
+        PersistentDataType.LIST.integerArrays(),
+        PersistentDataType.LIST.integers(),
+        PersistentDataType.LIST.longArrays(),
+        PersistentDataType.LIST.longs(),
+        PersistentDataType.LIST.shorts(),
+        PersistentDataType.LIST.strings(),
     };
 
     public static Byte getByte(PersistentDataContainer tag, NamespacedKey key) {
